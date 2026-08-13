@@ -1,0 +1,203 @@
+{
+  "$note": "Primitive tier = raw values. Semantic tier = role-based aliases, split by light/dark mode. Values marked PROPOSED were not present anywhere in the connected Figma file and need sign-off before use — everything else is pulled directly from bound Figma variables or measured directly off the FastRouter node (6368:53594).",
+
+  "primitive": {
+    "color": {
+      "neutral": {
+        "0": "#FFFFFF",
+        "50": "#F9F9F7",
+        "100": "#F5F5F5",
+        "300": "#E5E5E5",
+        "400": "#D5D5D5",
+        "500": "#6B6B6B",
+        "900": "#0D0D0D",
+        "950": "#111111"
+      },
+      "neutralDark": {
+        "900": "#1A1A1A",
+        "800": "#212121",
+        "700": "#282828",
+        "$note": "Added 2026-07-14, replacing the retired `navy.900` (#1A1A2E) primitive, which had a genuine blue cast (R26/G26/B46 — blue channel 20 points above R/G) and collapsed bg-primary/bg-surface/bg-light into one flat color with no separation. Revised same day (round 2): the person inspected the original reference (utk2026.vercel.app/work/spinny-buy-homepage) and found its actual rendered page background computes to rgb(26,26,26) — re-anchored this scale on that exact value as the darkest/page step, with the other two an evenly-stepped +7-per-channel climb (26/33/40) so surfaces read as clearly raised above the page per direct instruction, rather than the first pass's closer 0a0a0a/141414/1a1a1a grouping."
+      },
+      "neutralOnDark": {
+        "100": "#D9D9D9",
+        "400": "#888888"
+      },
+      "blue": {
+        "600": "#1A34D7",
+        "400_PROPOSED": "#5C74E8"
+      },
+      "red": {
+        "600": "#C0392B",
+        "400_PROPOSED": "#E0685A"
+      },
+      "green": {
+        "600": "#48A825",
+        "400_PROPOSED": "#6FC24A"
+      }
+    },
+
+    "font": {
+      "display": "Fraunces",
+      "ui": "Google Sans Flex"
+    },
+
+    "space": {
+      "0": "0px",
+      "2": "2px",
+      "4": "4px",
+      "6": "6px",
+      "8": "8px",
+      "10": "10px",
+      "12": "12px",
+      "16": "16px",
+      "20": "20px",
+      "24": "24px",
+      "32": "32px",
+      "40": "40px",
+      "48": "48px",
+      "60": "60px",
+      "64": "64px",
+      "80": "80px",
+      "120": "120px",
+      "$confirmed_in_figma": ["8", "10", "12"],
+      "$rest_is_standard_scale_filled_in_around_them": true
+    },
+
+    "radius_PROPOSED": {
+      "none": "0px",
+      "sm": "4px",
+      "md": "8px",
+      "lg": "12px",
+      "xl": "16px",
+      "full": "9999px",
+      "$why_proposed": "No radius variables exist anywhere in the connected Figma file for portfolio chrome. The only radius sample found (8px) was on a chip inside an embedded FastRouter product screenshot — that's the product being shown, not your shell, so it wasn't used as the basis. This is a fresh scale in the Linear/Stripe/Vercel range you referenced.",
+      "frame_CONFIRMED": "30px",
+      "$frame_note": "Unlike the rest of this scale, 30px is real — measured directly off ScreenshotFrame's bezel, and it's a shared cross-case-study component, so this value isn't a one-off. Doesn't fit the xl/full jump cleanly, kept as its own named step rather than force it into the proposed scale."
+    },
+
+    "opacity_PROPOSED": {
+      "0": "0",
+      "5": "0.05",
+      "10": "0.1",
+      "20": "0.2",
+      "40": "0.4",
+      "60": "0.6",
+      "80": "0.8",
+      "100": "1",
+      "$why_proposed": "No opacity variables exist in Figma either. Standard overlay/hover/disabled scale."
+    },
+
+    "width": {
+      "frame": "1440px",
+      "section": "1060px",
+      "contentArea": "980px",
+      "headlineColumn": "760px",
+      "900": "900px",
+      "680": "680px",
+      "$note": "760/900/680/1440 are the actual bound width variables in Figma. section/contentArea were originally 1136px/1016px — measured off Figma, not bound to a variable, but consistent with it (1440 - 2×152 outer margin = 1136; 1136 - 2×60 inner padding = 1016). Changed 2026-07-16 to 1060px/980px per direct instruction: a deliberate compact-layout decision, not a Figma-sync gap — done to (1) clear SectionRail.tsx (fixed at the left edge) from touching content on smaller desktop viewports, and (2) shrink the decision-asset capsules (720px -> 500px) which read as oversized. This is now the one unified content width used site-wide, replacing the previous two-tier system (1136/1016 for text sections, 1280/1200 for decision-frame sections, with ObservabilityIntro/EvaluationsFeature independently nesting a third 1016/1200 split inside their own 1280 wrapper)."
+    }
+  },
+
+  "semantic": {
+    "light": {
+      "color": {
+        "bg-primary": "{primitive.color.neutral.50}",
+        "bg-surface": "{primitive.color.neutral.0}",
+        "bg-light": "{primitive.color.neutral.100}",
+        "border-default": "{primitive.color.neutral.300}",
+        "border-frame": "{primitive.color.neutral.400}",
+        "text-primary": "{primitive.color.neutral.900}",
+        "text-muted": "{primitive.color.neutral.500}",
+        "text-accent": "{primitive.color.blue.600}",
+        "text-error": "{primitive.color.red.600}",
+        "text-success": "{primitive.color.green.600}"
+      }
+    },
+    "dark": {
+      "color": {
+        "bg-primary_PROPOSED": "{primitive.color.neutralDark.900}",
+        "bg-surface_PROPOSED": "{primitive.color.neutralDark.700}",
+        "bg-light_PROPOSED": "{primitive.color.neutralDark.800}",
+        "border-default_PROPOSED": "rgba(255,255,255,0.08)",
+        "border-frame_PROPOSED": "rgba(255,255,255,0.14)",
+        "text-primary": "{primitive.color.neutralOnDark.100}",
+        "text-muted": "{primitive.color.neutralOnDark.400}",
+        "text-accent_PROPOSED": "{primitive.color.blue.400_PROPOSED}",
+        "text-error_PROPOSED": "{primitive.color.red.400_PROPOSED}",
+        "text-success_PROPOSED": "{primitive.color.green.400_PROPOSED}"
+      },
+      "$note": "text-primary/text-muted come from real Figma variables (text-on-dark, text/on-dark-muted) — unchanged, already neutral gray (R=G=B), never had a tint problem. bg-primary/bg-surface/bg-light were previously bound to a Figma 'bg-dark' variable (#1A1A2E) that turned out to read as visibly blue-tinted once dark mode actually shipped; re-flagged PROPOSED since they no longer trace to Figma at all. Revised twice on 2026-07-14: round 1 replaced the tint with a neutral scale from an external reference; round 2 re-anchored bg-primary on rgb(26,26,26) — the reference's actual computed page background, per the person's own inspection — with bg-light/bg-surface progressively lighter so cards read as clearly raised above the page, per direct instruction. Border and the three accent/error/success dark values still don't exist in Figma — proposed as lightened tints of their light-mode counterparts for dark-background contrast."
+    },
+
+    "typography": {
+      "display": { "fontFamily": "{primitive.font.display}", "weight": 700, "size": "68px", "lineHeight": "76px", "letterSpacing": "-1.2px" },
+      "chapter-intro": { "fontFamily": "{primitive.font.display}", "weight": 700, "size": "48px", "lineHeight": "56px", "letterSpacing": "-0.48px", "$corrected": "Was -1px. Same bug as body/body-semibold/label/caption-medium: -1% of the 48px size is -0.48px, not -1px. Verified 2026-07-11 against the FastRouter 'The Problem' / 'What is FastRouter?' headings (node 6368:53648): Figma's own generated code renders it as tracking-[-0.48px]." },
+      "at-a-glance-label": { "fontFamily": "{primitive.font.display}", "weight": 700, "size": "32px", "lineHeight": "44px", "letterSpacing": "0.5px", "$verified": "Confirmed 2026-07-12 against the Impact section's stat numbers (node 6368:54237) and the 'Thanks for reading' h2 (node 6368:54358): Figma's own generated code renders tracking-[0.5px] literally at this size, not a scaled-down percentage — unlike label/body/caption-medium/caption-regular/chapter-intro, this style stores tracking as literal px in Figma, same as display and heading. No correction needed." },
+      "stat": { "fontFamily": "{primitive.font.display}", "weight": 600, "size": "20px", "lineHeight": "32px", "letterSpacing": "0px" },
+      "heading": { "fontFamily": "{primitive.font.ui}", "weight": 600, "size": "28px", "lineHeight": "40px", "letterSpacing": "-0.1px" },
+      "decision-title": { "fontFamily": "{primitive.font.ui}", "weight": 600, "size": "20px", "lineHeight": "26px", "letterSpacing": "0px", "$corrected": "Figma currently binds this to DM Sans — you confirmed it should be Google Sans Flex like everything else. Code uses Google Sans Flex; fix the binding in Figma when you get to it so file and code match." },
+      "body-semibold": { "fontFamily": "{primitive.font.ui}", "weight": 600, "size": "17px", "lineHeight": "28px", "letterSpacing": "0.085px", "$corrected": "Was 0.5px. Figma stores this style's tracking as a percentage (0.5%), and whoever first filled in this file read the raw number off Figma and appended \"px\" without converting — 0.5% of the 17px size is 0.085px, not 0.5px. Verified 2026-07-11 against the FastRouter Hero node (6368:53597), where this style is used on the intro paragraph: Figma's own generated code renders it as tracking-[0.085px]." },
+      "body": { "fontFamily": "{primitive.font.ui}", "weight": 400, "size": "16px", "lineHeight": "28px", "letterSpacing": "0.08px", "$corrected": "Was 0.5px. Same bug as body-semibold/label: 0.5% of the 16px size is 0.08px, not 0.5px. Verified 2026-07-11 against the FastRouter meta-bar node (6368:53618), where this style is used on the Role/Team/Timeline/Live At values: Figma's own generated code renders it as tracking-[0.08px]." },
+      "caption-semibold": { "fontFamily": "{primitive.font.ui}", "weight": 600, "size": "14px", "lineHeight": "20px", "letterSpacing": "0px" },
+      "caption-medium": { "fontFamily": "{primitive.font.ui}", "weight": 500, "size": "14px", "lineHeight": "20px", "letterSpacing": "0.07px", "$corrected": "Was 0.5px. Same bug as body/body-semibold/label: 0.5% of the 14px size is 0.07px, not 0.5px. Verified 2026-07-11 against the FastRouter illustration-caption node (6368:53641): Figma's own generated code renders it as tracking-[0.07px]." },
+      "caption-regular": { "fontFamily": "{primitive.font.ui}", "weight": 400, "size": "14px", "lineHeight": "20px", "letterSpacing": "0.07px", "$corrected": "Was 0.5px. Same bug as body/body-semibold/label/caption-medium: 0.5% of the 14px size is 0.07px, not 0.5px. Verified 2026-07-11 against the FastRouter rejected-vs-shipped reason list (node 6459:54780): Figma's own generated code renders it as tracking-[0.07px]." },
+      "label": { "fontFamily": "{primitive.font.ui}", "weight": 500, "size": "13px", "lineHeight": "18px", "letterSpacing": "0.78px", "$corrected": "Was 6px. Same bug as body-semibold: Figma stores this style's tracking as a percentage (6%), read off as a raw number and given a \"px\" suffix without converting — 6% of the 13px size is 0.78px, not 6px (which would look extremely wide-tracked at this size). Verified 2026-07-11 against the FastRouter Hero node (6368:53597), where this style is used on the eyebrow row: Figma's own generated code renders it as tracking-[0.78px]." }
+    },
+
+    "radius_PROPOSED": {
+      "button": "{primitive.radius_PROPOSED.sm}",
+      "card": "{primitive.radius_PROPOSED.md}",
+      "decision-block": "{primitive.radius_PROPOSED.lg}",
+      "image": "{primitive.radius_PROPOSED.md}",
+      "chip": "{primitive.radius_PROPOSED.full}",
+      "frame": "{primitive.radius_PROPOSED.frame_CONFIRMED}"
+    },
+
+    "opacity_PROPOSED": {
+      "disabled": "{primitive.opacity_PROPOSED.40}",
+      "hover-overlay": "{primitive.opacity_PROPOSED.5}",
+      "active-overlay": "{primitive.opacity_PROPOSED.10}",
+      "scrim": "{primitive.opacity_PROPOSED.60}",
+      "muted-icon": "{primitive.opacity_PROPOSED.60}"
+    },
+
+    "layout": {
+      "container": {
+        "maxWidth": "{primitive.width.section}",
+        "marginInline": "auto",
+        "$note": "Not '1440 minus margin' — it's the content container's max-width (1060px as of 2026-07-16, was 1136px; see primitive.width's own note for why). Center it with margin-inline:auto and it self-positions at any real viewport width. There is no fixed outer-margin token; that was an artifact of measuring a fixed-width artboard, not a design decision."
+      },
+      "edgePadding_PROPOSED": "24px",
+      "$edgePadding_note": "Only needed below ~1060px viewport width so content doesn't touch the screen edge. No mobile frame exists in the connected Figma file to pull a real value from, so this is proposed, not extracted.",
+      "content-area": "{primitive.width.contentArea}",
+      "headline-column": "{primitive.width.headlineColumn}",
+      "inner-padding": "{primitive.space.40}"
+    },
+
+    "sectionRhythm": {
+      "standard_PROPOSED": "80px",
+      "chapterBreak": "120px",
+      "$confirmed_from_figma": "Audited all 15 top-level <section> frames in the FastRouter node directly. 13 of 15 use exactly 60px internal top AND bottom padding — that's the real vertical rhythm token, and it's the same 60px value already used for horizontal inner-padding. One consistent spacing primitive doing both jobs — worth keeping deliberate rather than diverging it later.",
+      "$changed_2026-07-17": "Bumped 60px -> 80px per direct instruction, for more breathing room between sections — a deliberate departure from the Figma-confirmed value above, not a sync gap (re-flagged _PROPOSED since it no longer traces to Figma at all, same treatment as the 1060px section-width departure from Figma's 1136px on 2026-07-16). Applied to every section using the standard rhythm — all 12 py-60px sections, plus Hero's pt-60px and MetaBar's pb-60px (the same rhythm split across two adjacent components, per the exception already noted: MetaBar sits directly under Hero with 0px shared gap, so the 'top+bottom = 60px' pair became 'top+bottom = 80px' there too). HonestFailure's separate mb-60px (extra margin from the section below it, not this section's own padding) was intentionally left untouched — a different concern.",
+      "$exceptions_found": [
+        "Hero section: previously 120px top padding here (2x standard, chapterBreak) — changed to the standard rhythm (now 80px, was 60px) 2026-07-16 per direct feedback that 120px 'looked way down from the header'. No section in the current build uses the 120px chapterBreak value anymore.",
+        "One section, ~446px tall, positioned right before what's likely the Reflections chapter: 120px bottom padding (2x standard) in Figma. Reads as an intentional chapter break there, but not reproduced in code — see note above, chapterBreak isn't used anywhere currently.",
+        "RESOLVED: the ~307px 'ONE HONEST FAILURE' callout in Council used 64px top/bottom instead of 60px — confirmed drift, normalized to the standard rhythm in code (now 80px). Figma itself still shows 64px on this section; worth nudging it to match there too so file and code agree, same as the decision-title font fix.",
+        "One section, ~520px tall, right after the At-a-glance table: 0px top AND bottom padding. This lines up with what should be the full-bleed opening illustration — 0 padding is correct for an edge-to-edge image; the gap either side still comes from the neighboring sections' own standard-rhythm padding."
+      ],
+      "$action_needed": "None — resolved above."
+    },
+
+    "contentRhythm": {
+      "blockGap": "32px",
+      "blockGapLarge": "64px",
+      "$confirmed_from_figma": "Measured every gap between direct content blocks (heading, paragraph, visual, list) inside all 15 sections — 21 gaps total. 32px is the dominant value (9 of 21). 64px (exactly 2x) shows up 4 times as a clean doubled break, same 'double the rhythm unit for emphasis' pattern as the 60/120 section-level padding. These two read as your real content rhythm.",
+      "$needs_confirmation": [],
+      "$resolved": [
+        "Council intro block stack (brief -> tension -> conceptual grounding -> reframe) was 56px, 4 consecutive occurrences. Normalized to 64px (blockGapLarge) to match the doubling convention used everywhere else. Figma still shows 56px here — worth updating those 4 gaps to 64 in Figma too.",
+        "'ONE HONEST FAILURE' callout internal gaps rounded to the nearest grid value: 10.7px -> 10px (matches the item spacing/10 variable already confirmed elsewhere in the file), 18.5px -> 20px. Figma still shows the original non-grid values — same callout that also had the 64->60 padding drift, worth a full pass on that one component in Figma rather than three separate spot-fixes."
+      ]
+    }
+  }
+}

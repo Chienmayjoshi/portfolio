@@ -1,5 +1,62 @@
+// src/app/layout.tsx
+// Merge this into your existing root layout — don't replace the whole file,
+// create-next-app already scaffolded metadata/html/body structure you want to keep.
+
+// NOTE: verify this import resolves. Google Sans Flex only landed on
+// Google Fonts in Nov 2025 — next/font's font manifest may or may not
+// have picked it up yet depending on when you're reading this. If the
+// import below errors, that's why. Fallback: download the variable font
+// file from fonts.google.com/specimen/Google+Sans+Flex and load it with
+// next/font/local instead — same output CSS variable, just self-hosted
+// manually rather than pulled from Google's catalog automatically.
+import { Google_Sans_Flex } from "next/font/google";
+import localFont from "next/font/local";
+
+// Display font swapped 2026-07-14: Fraunces -> Season Mix, per direct
+// request. Season Mix is a trial font (Displaay Type Foundry), not on
+// Google Fonts, so it's self-hosted the same way this file already
+// documented as a fallback approach for Google Sans Flex below — just
+// used for real here. Confirmed by inspecting the file's own tables
+// (no fvar/gvar/STAT — a static font, not variable) and its OS/2
+// usWeightClass: this is genuinely a Heavy/900 weight face, not the
+// Bold/700 assumed before the file was available — registered at its
+// real weight rather than the earlier guess. Only one weight was
+// provided, so anything requesting font-semibold (600) on font-display
+// text renders at this same 900 face regardless (a static font can't be
+// thinned) — expected, not a bug, until/unless a second weight file
+// shows up.
+const seasonMix = localFont({
+  src: "../../public/fonts/SeasonMix-TRIAL-Heavy.ttf",
+  weight: "900",
+  variable: "--font-season-mix",
+  display: "swap",
+});
+
+const googleSansFlex = Google_Sans_Flex({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-google-sans-flex",
+  display: "swap",
+});
+
+// Then on your <html> or <body> tag, add both variable classes:
+// <html lang="en" className={`${seasonMix.variable} ${googleSansFlex.variable}`}>
+
+// If the Google_Sans_Flex import fails, replace it with:
+//
+// import localFont from "next/font/local";
+// const googleSansFlex = localFont({
+//   src: "../../public/fonts/GoogleSansFlex-VariableFont.ttf", // path to downloaded file
+//   variable: "--font-google-sans-flex",
+//   display: "swap",
+// });
+
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
+import TempHeader from "@/components/shared/TempHeader";
+import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,9 +82,41 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${seasonMix.variable} ${googleSansFlex.variable} h-full antialiased`}
+      // The theme-init script below intentionally adds `dark` to this
+      // element before React hydrates (that's the whole point — it avoids
+      // a flash of the wrong theme). That makes the live DOM className
+      // differ from what was server-rendered whenever dark mode is active,
+      // which React would otherwise flag as a hydration mismatch console
+      // error. suppressHydrationWarning tells React this specific,
+      // expected divergence is fine — same fix next-themes applies
+      // internally for the identical reason.
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {/* Blocking script (next/script "beforeInteractive") so dark mode
+            applies before first paint — avoids a flash of the wrong theme
+            on load. Reads a stored choice first, falls back to OS
+            preference. Static string, no user input — dangerouslySetInnerHTML
+            is safe here. */}
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`
+            (function () {
+              try {
+                var stored = localStorage.getItem("theme");
+                var isDark = stored
+                  ? stored === "dark"
+                  : window.matchMedia("(prefers-color-scheme: dark)").matches;
+                if (isDark) document.documentElement.classList.add("dark");
+              } catch (e) {}
+            })();
+          `}
+        </Script>
+        <ThemeProvider>
+          <TempHeader />
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

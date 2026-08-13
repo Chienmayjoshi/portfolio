@@ -1,64 +1,82 @@
-import Image from "next/image";
+import Link from "next/link";
+import ProjectCard, {
+  type ProjectCardData,
+} from "@/components/shared/ProjectCard";
+
+// TEMPORARY project index — not sourced from Figma (per CLAUDE.md, nothing
+// in the connected Figma files positions a root/index page; only the three
+// case studies exist there). Placeholder so `backHref="/"` on every case
+// study's SectionRail lands somewhere real instead of the create-next-app
+// scaffold. Reuses ProjectCard (src/components/shared/ProjectCard.tsx),
+// the same card each case study's ReadNext.tsx renders, in a 3-up grid —
+// per direct request to reuse that component rather than building a
+// second card style.
+//
+// Copy below isn't invented: title/description text for each card is
+// copied verbatim from wherever it already appears identically across at
+// least two of the three ReadNext.tsx files (cross-referenced, not
+// authored fresh). One exception worth flagging: FastRouter's own year is
+// inconsistent between sources — analytics/ReadNext.tsx says "2024",
+// extensions/ReadNext.tsx says "2026". Went with 2026 here since it
+// matches MetaBar.tsx's "4 Weeks 2025-26" timeline and Footer's "© 2026";
+// worth reconciling analytics/ReadNext.tsx to match once someone can
+// confirm which is right.
+const projects: ProjectCardData[] = [
+  {
+    category: "FastRouter",
+    year: "2026",
+    title: "Enterprise AI teams were flying blind on every model decision.",
+    description:
+      "No existing pattern, 4 weeks, one novel architecture that the industry validated 6 months later.",
+    href: "/fastrouter",
+  },
+  {
+    category: "Analytics",
+    year: "2024",
+    title: "Data that three types of users could actually trust",
+    description:
+      "50+ metrics, no taxonomy, and a formula builder that broke every time a dependency was missing.",
+    href: "/analytics",
+  },
+  {
+    category: "Extensions",
+    year: "2025",
+    title: "Seven extensions designed to stay installed",
+    description:
+      "The previous team designed for the install. I designed for every new tab after it.",
+    href: "/extensions",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex flex-col flex-1 items-center w-full">
+      <main className="w-full max-w-[var(--width-content)] px-[var(--edge-padding)] md:px-40px py-80px flex flex-col gap-48px">
+        <div className="flex flex-col gap-12px">
+          <span className="font-ui font-medium text-text-muted text-[13px] uppercase tracking-[0.78px]">
+            selected work
+          </span>
+          <h1 className="font-display font-bold text-text-primary text-[36px] leading-[42px] tracking-[-0.5px] md:text-[52px] md:leading-[58px] md:tracking-[-0.8px]">
+            Chinmay Joshi
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-24px items-stretch">
+          {projects.map((project) => (
+            <ProjectCard key={project.href} {...project} />
+          ))}
         </div>
+
+        {/* Quiet pointer to /practice (per the approved practice-page
+            plan) — deliberately one muted line after the case study
+            grid, not a fourth card: side-project content stays visually
+            subordinate to the three case studies. */}
+        <Link
+          href="/practice"
+          className="self-start font-ui font-normal text-[14px] leading-[20px] text-text-muted hover:text-text-primary transition-colors"
+        >
+          Also building →
+        </Link>
       </main>
     </div>
   );

@@ -1,26 +1,177 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   Tailwind v4 note: create-next-app now scaffolds v4 by default, which
+   moved config from tailwind.config.ts into CSS via @theme. There is no
+   config file to edit — this file IS the config. If you already have a
+   tailwind.config.ts sitting in the project root, it's unused; delete it
+   or leave it, doesn't matter, Tailwind v4 won't read it.
+   ========================================================================== */
+
+@theme {
+  /* ------------------------------------------------------------------
+     FONTS — CSS variables are supplied by next/font in layout.tsx
+     (see the snippet below this file). font-display / font-ui become
+     usable Tailwind utilities once those vars exist.
+
+     Display font swapped 2026-07-14: Fraunces -> Season Mix (see
+     layout.tsx for details). The `font-display` utility name itself is
+     unchanged — it's a role, not a font name — so no component using
+     `font-display` needed to change.
+     ------------------------------------------------------------------ */
+  --font-display: var(--font-season-mix);
+  --font-ui: var(--font-google-sans-flex);
+
+  /* ------------------------------------------------------------------
+     COLOR — light mode values (dark mode override is further down).
+     Named to match design-tokens.json exactly — deliberately, so every
+     class in the codebase greps straight back to the token file with
+     no translation layer to drift out of sync. Yes, this means
+     utilities look like bg-bg-primary / text-text-primary / 
+     border-border-frame. That repetition is the cost of zero ambiguity
+     — worth it on a project where you're actively hunting drift.
+     ------------------------------------------------------------------ */
+  --color-bg-primary: #F9F9F7;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-light: #F5F5F5;
+  --color-border-default: #E5E5E5;
+  --color-border-frame: #D5D5D5;
+  --color-text-primary: #0D0D0D;
+  --color-text-muted: #6B6B6B;
+  --color-text-accent: #1A34D7;
+  --color-text-error: #C0392B;
+  --color-text-success: #48A825;
+
+  /* ------------------------------------------------------------------
+     SPACING — literal pixel scale, keys suffixed "px" ON PURPOSE.
+     Tailwind's built-in spacing scale is a rem multiplier — p-8 is
+     2rem (32px) by default, not 8px. A bare --spacing-8 here would
+     silently redefine that default across every spacing-driven
+     utility in the framework (width, height, inset, translate, gap —
+     not just padding/margin), not just the ones you meant to touch.
+     The "px" suffix keeps this scale additive instead of destructive.
+     Usage: p-8px, gap-60px, py-120px, etc.
+     ------------------------------------------------------------------ */
+  --spacing-2px: 2px;
+  --spacing-4px: 4px;
+  --spacing-6px: 6px;
+  --spacing-8px: 8px;
+  --spacing-10px: 10px;
+  --spacing-12px: 12px;
+  --spacing-16px: 16px;
+  --spacing-20px: 20px;
+  --spacing-24px: 24px;
+  --spacing-32px: 32px;
+  --spacing-40px: 40px;
+  --spacing-48px: 48px;
+  --spacing-60px: 60px;
+  --spacing-64px: 64px;
+  --spacing-80px: 80px;
+  --spacing-120px: 120px;
+
+  /* ------------------------------------------------------------------
+     RADIUS — generates rounded-sm / rounded-md / rounded-frame / etc.
+     ------------------------------------------------------------------ */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-frame: 30px;
+  --radius-full: 9999px;
+}
+
+/* ==========================================================================
+   Layout widths — kept as plain CSS variables OUTSIDE @theme rather than
+   guessing at a --width-* theme namespace I can't confirm generates clean
+   utilities in v4 without testing. Use them via arbitrary values:
+   max-w-[var(--width-content)]. If npm run dev shows Tailwind picking these
+   up as a real namespace on its own, they can move into @theme later —
+   safer to start explicit.
+   ========================================================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 1060px/980px as of 2026-07-16 (was 1136px/1016px) — a deliberate
+     compact-layout decision, not a Figma-sync gap: clears SectionRail.tsx
+     (fixed left-edge nav) from touching content on smaller desktop
+     viewports, and unifies the page onto one content width, replacing the
+     previous two-tier system (1136/1016 text sections vs 1280/1200
+     decision-frame sections). See design-tokens.json's width primitive
+     note for the full reasoning. */
+  --width-content: 1060px;      /* container max-width, center with mx-auto */
+  --width-content-area: 980px;  /* full-bleed content inside the container */
+  --width-headline: 760px;      /* hero/heading copy column */
+  --edge-padding: 24px;         /* PROPOSED — below ~1060px viewport, no mobile frame in Figma to source a real value from */
+
+  /* Added 2026-07-14 — FastRouterLogomark.tsx's wordmark paths were
+     exported from Figma as fill="var(--fill-0, black)"; this gives that
+     variable a real value. No .dark override needed: --color-text-primary
+     is already redefined inside .dark{}, and var() references resolve
+     dynamically against the live cascade, so this tracks it automatically
+     — same token every other text color already uses, so the logo can
+     never drift out of sync with the rest of the theme. */
+  --fill-0: var(--color-text-primary);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ==========================================================================
+   DARK MODE — class-based (toggle .dark on <html>), not prefers-color-scheme.
+   Tailwind v4 defaults dark: to a media query; this remaps it to a class
+   so you control the toggle instead of the OS.
+   ========================================================================== */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Corrected 2026-07-14 (round 1): bg-primary/bg-surface/bg-light were all
+   the same flat #1A1A2E (a Figma-bound "bg-dark" variable) — flagged by
+   the person as visibly blue-tinted (R26/G26/B46, blue channel 20pts above
+   R/G), with zero separation between page/card/panel on top of that.
+   Replaced with a neutral (R=G=B, zero cast) scale referencing an external
+   dark theme (utk2026.vercel.app/work/spinny-buy-homepage).
+
+   Corrected again same day (round 2): the person's own inspection of that
+   reference found its actual rendered page background computed to
+   rgb(26,26,26) (#1A1A1A) — darker than that first pass's #0A0A0A/#1A1A1A
+   pairing, and specifically asked for surfaces to read as "raised above"
+   that base. Rebuilt as an evenly-stepped +7-per-channel scale anchored on
+   the exact value given (#1A1A1A page bg), with bg-light/bg-surface
+   progressively lighter so cards visibly float above the page — same
+   ordering as before (surface lightest, mirroring light mode's
+   surface(white) > primary(#F9F9F7) > light(#F5F5F5)), just re-anchored.
+   Borders/text-primary/text-muted unchanged from round 1 — already neutral,
+   not part of either complaint. */
+.dark {
+  --color-bg-primary: #1A1A1A;   /* PROPOSED */
+  --color-bg-surface: #282828;   /* PROPOSED */
+  --color-bg-light: #212121;     /* PROPOSED */
+  --color-border-default: rgba(255, 255, 255, 0.08); /* PROPOSED */
+  --color-border-frame: rgba(255, 255, 255, 0.14);   /* PROPOSED */
+  --color-text-primary: #D9D9D9;
+  --color-text-muted: #888888;
+  --color-text-accent: #5C74E8;  /* PROPOSED */
+  --color-text-error: #E0685A;   /* PROPOSED */
+  --color-text-success: #6FC24A; /* PROPOSED */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ==========================================================================
+   BASE
+   ========================================================================== */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+}
+
+/* ==========================================================================
+   /practice mobile scroll snap — scope class stamped on <html> by
+   components/practice/SnapScope.tsx only while the practice feed is
+   mounted. Mandatory snap (per direct decision) lives on the document
+   scroll, not a nested container (a nested scroller would trap mobile
+   scroll and fight the sticky TempHeader). Media-query scoped below `sm`
+   (39.99rem ≈ 640px, Tailwind's sm breakpoint) so desktop is entirely
+   unaffected. scroll-padding-top matches the 64px TempHeader (the
+   HEADER_OFFSET constant in fastrouter/page.tsx) plus breathing room, so
+   snapped cards land below the sticky bar, not underneath it.
+   ========================================================================== */
+@media (max-width: 39.99rem) {
+  .practice-snap {
+    scroll-snap-type: y mandatory;
+    scroll-padding-top: 80px;
+  }
 }
