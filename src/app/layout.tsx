@@ -55,7 +55,8 @@ const googleSansFlex = Google_Sans_Flex({
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import TempHeader from "@/components/shared/TempHeader";
+import Header from "@/components/shared/Header";
+import { HeaderProvider } from "@/components/shared/HeaderProvider";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import "./globals.css";
 
@@ -113,8 +114,10 @@ export default function RootLayout({
           `}
         </Script>
         <ThemeProvider>
-          <TempHeader />
-          {children}
+          <HeaderProvider>
+            <Header />
+            {children}
+          </HeaderProvider>
         </ThemeProvider>
       </body>
     </html>

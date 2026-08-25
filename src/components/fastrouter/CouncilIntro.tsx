@@ -16,11 +16,12 @@ import ThemeSwap from "@/components/shared/ThemeSwap";
 // border utilities resolve through the existing dark-mode CSS vars instead
 // of hardcoding hex. One real deviation from Figma there: the card's
 // border in Figma is a solid #D9D9D9; the scoped border-border-default
-// token resolves to the PROPOSED translucent rgba(217,217,217,0.16)
-// instead. Went with the systematic (if unconfirmed) token over the
-// one-off literal value, consistent with the radius-frame call on
-// ScreenshotFrame — flagging since border-default_PROPOSED still needs
-// sign-off per design-tokens.json.
+// token resolves to the translucent rgba(255,255,255,0.08) instead. Went
+// with the systematic token over the one-off literal value, consistent
+// with the radius-frame call on ScreenshotFrame — border-default's dark
+// value itself is confirmed (signed off 2026-08-20, matches Figma's own
+// Color variable collection), so this is a deliberate token-over-literal
+// choice for this one card, not an open sign-off gap anymore.
 //
 // The tweet is a real screenshot (Andrej Karpathy's actual tweet, cited as
 // the conceptual reference) — kept as a raster image rather than rebuilt

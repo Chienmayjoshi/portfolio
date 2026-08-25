@@ -21,6 +21,12 @@
      ------------------------------------------------------------------ */
   --font-display: var(--font-season-mix);
   --font-ui: var(--font-google-sans-flex);
+  /* Geist Mono — added for the `fastrouter-slides` horizontal-slide format
+     (label-mono token), not used by the locked vertical-scroll case
+     studies. The CSS var itself was already exposed on <html> in
+     layout.tsx from create-next-app scaffolding; this line is what
+     actually turns it into a usable `font-mono` Tailwind utility. */
+  --font-mono: var(--font-geist-mono);
 
   /* ------------------------------------------------------------------
      COLOR — light mode values (dark mode override is further down).
@@ -135,18 +141,48 @@
    ordering as before (surface lightest, mirroring light mode's
    surface(white) > primary(#F9F9F7) > light(#F5F5F5)), just re-anchored.
    Borders/text-primary/text-muted unchanged from round 1 — already neutral,
-   not part of either complaint. */
+   not part of either complaint.
+
+   Confirmed 2026-08-20: every value below now matches Figma's own "Color"
+   variable collection Dark mode exactly (VariableCollectionId:6263:8) —
+   design-tokens.json's PROPOSED flags cleared accordingly, so dropped here
+   too. */
 .dark {
-  --color-bg-primary: #1A1A1A;   /* PROPOSED */
-  --color-bg-surface: #282828;   /* PROPOSED */
-  --color-bg-light: #212121;     /* PROPOSED */
-  --color-border-default: rgba(255, 255, 255, 0.08); /* PROPOSED */
-  --color-border-frame: rgba(255, 255, 255, 0.14);   /* PROPOSED */
+  --color-bg-primary: #1A1A1A;
+  --color-bg-surface: #282828;
+  --color-bg-light: #212121;
+  --color-border-default: rgba(255, 255, 255, 0.08);
+  --color-border-frame: rgba(255, 255, 255, 0.14);
   --color-text-primary: #D9D9D9;
   --color-text-muted: #888888;
-  --color-text-accent: #5C74E8;  /* PROPOSED */
-  --color-text-error: #E0685A;   /* PROPOSED */
-  --color-text-success: #6FC24A; /* PROPOSED */
+  --color-text-accent: #5C74E8;
+  --color-text-error: #E0685A;
+  --color-text-success: #6FC24A;
+}
+
+/* Scoped "force light" override — the reverse of .dark{} above. Added for
+   the fastrouter-slides horizontal format, where chapter-intro slides must
+   invert RELATIVE TO the current global theme (global light -> slide dark;
+   global dark -> slide light). CouncilIntro.tsx already proves the
+   force-dark-inside-light-page half of this trick (wrapping a subtree in a
+   literal `dark` class); this is what makes the opposite direction
+   possible — wrap a subtree in `light` while the page/html ancestor has
+   `.dark`, and every color utility inside (bg-, text-, border-) resolves
+   back to these light values instead of .dark's, since custom-property cascade
+   favors the nearer-nested declaration. Values copied verbatim from the
+   light-mode defaults in the @theme block above — keep the two in sync if
+   those ever change. */
+.light {
+  --color-bg-primary: #F9F9F7;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-light: #F5F5F5;
+  --color-border-default: #E5E5E5;
+  --color-border-frame: #D5D5D5;
+  --color-text-primary: #0D0D0D;
+  --color-text-muted: #6B6B6B;
+  --color-text-accent: #1A34D7;
+  --color-text-error: #C0392B;
+  --color-text-success: #48A825;
 }
 
 /* ==========================================================================
@@ -173,5 +209,72 @@ body {
   .practice-snap {
     scroll-snap-type: y mandatory;
     scroll-padding-top: 80px;
+  }
+}
+
+/* ==========================================================================
+   Ambient "breathing" zoom for full-bleed hero illustrations
+   (fastrouter-slides format) — a continuous ken-burns-style loop, not tied
+   to scroll position or React state, so plain CSS keyframes rather than
+   GSAP/ScrollTrigger or Motion (this project's animation-split rule covers
+   scroll-scrubbed and React-state-tied animation; an always-on ambient
+   loop is neither). Scale only ever goes to/from 1, never below, so
+   object-cover never exposes an edge underneath it.
+
+   Mechanic confirmed directly from zainabkabira.com/work/fireflut's
+   .cs-hero-zoom (18s ease-in-out infinite, scale 1 -> 1.05 -> 1, applied to
+   a wrapper around the image rather than the image itself) — reproduced
+   here, not copied byte-for-byte.
+   ========================================================================== */
+@keyframes hero-zoom-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+.hero-zoom-loop {
+  animation: hero-zoom-breathe 18s ease-in-out infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-zoom-loop {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Model-name marquee (Problem slide, fastrouter-slides) — same "ambient
+   decorative loop -> plain CSS" reasoning as .hero-zoom-loop above, not
+   scroll- or state-tied. Both flanking columns scroll the SAME direction
+   (upward) — confirmed against a Figma prototype of three sequential
+   keyframes (measured each column's x/y at each state: every delta was an
+   upward move, never a reversal). Originally built with mirrored up/down
+   variants before that prototype existed; kept a single keyframe at two
+   different durations instead, so the columns stay out of phase with each
+   other without actually moving in opposite directions.
+   translateY(-50%) loops seamlessly because ModelMarqueeColumn renders the
+   name list twice back to back.
+   ========================================================================== */
+@keyframes model-marquee-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+.model-marquee-up {
+  animation: model-marquee-up 50s linear infinite;
+}
+.model-marquee-up-slow {
+  animation: model-marquee-up 60s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .model-marquee-up,
+  .model-marquee-up-slow {
+    animation: none;
   }
 }

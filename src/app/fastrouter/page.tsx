@@ -1,4 +1,5 @@
 import Hero from "@/components/fastrouter/Hero";
+import IntroPillTrigger from "@/components/fastrouter/IntroPillTrigger";
 import MetaBar from "@/components/fastrouter/MetaBar";
 import CockpitPlaceholder from "@/components/fastrouter/CockpitPlaceholder";
 import ProblemAndProduct from "@/components/fastrouter/ProblemAndProduct";
@@ -107,6 +108,7 @@ export default function FastRouterPage() {
           />
         </div>
         <main className="flex flex-col w-full min-[1300px]:w-[1060px] min-[1300px]:shrink-0">
+          <IntroPillTrigger />
           <Hero id="intro" />
           <MetaBar />
           <CockpitPlaceholder />

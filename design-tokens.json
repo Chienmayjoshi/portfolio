@@ -25,21 +25,22 @@
       },
       "blue": {
         "600": "#1A34D7",
-        "400_PROPOSED": "#5C74E8"
+        "400": "#5C74E8"
       },
       "red": {
         "600": "#C0392B",
-        "400_PROPOSED": "#E0685A"
+        "400": "#E0685A"
       },
       "green": {
         "600": "#48A825",
-        "400_PROPOSED": "#6FC24A"
+        "400": "#6FC24A"
       }
     },
 
     "font": {
       "display": "Fraunces",
-      "ui": "Google Sans Flex"
+      "ui": "Google Sans Flex",
+      "mono": "Geist Mono"
     },
 
     "space": {
@@ -116,18 +117,18 @@
     },
     "dark": {
       "color": {
-        "bg-primary_PROPOSED": "{primitive.color.neutralDark.900}",
-        "bg-surface_PROPOSED": "{primitive.color.neutralDark.700}",
-        "bg-light_PROPOSED": "{primitive.color.neutralDark.800}",
-        "border-default_PROPOSED": "rgba(255,255,255,0.08)",
-        "border-frame_PROPOSED": "rgba(255,255,255,0.14)",
+        "bg-primary": "{primitive.color.neutralDark.900}",
+        "bg-surface": "{primitive.color.neutralDark.700}",
+        "bg-light": "{primitive.color.neutralDark.800}",
+        "border-default": "rgba(255,255,255,0.08)",
+        "border-frame": "rgba(255,255,255,0.14)",
         "text-primary": "{primitive.color.neutralOnDark.100}",
         "text-muted": "{primitive.color.neutralOnDark.400}",
-        "text-accent_PROPOSED": "{primitive.color.blue.400_PROPOSED}",
-        "text-error_PROPOSED": "{primitive.color.red.400_PROPOSED}",
-        "text-success_PROPOSED": "{primitive.color.green.400_PROPOSED}"
+        "text-accent": "{primitive.color.blue.400}",
+        "text-error": "{primitive.color.red.400}",
+        "text-success": "{primitive.color.green.400}"
       },
-      "$note": "text-primary/text-muted come from real Figma variables (text-on-dark, text/on-dark-muted) — unchanged, already neutral gray (R=G=B), never had a tint problem. bg-primary/bg-surface/bg-light were previously bound to a Figma 'bg-dark' variable (#1A1A2E) that turned out to read as visibly blue-tinted once dark mode actually shipped; re-flagged PROPOSED since they no longer trace to Figma at all. Revised twice on 2026-07-14: round 1 replaced the tint with a neutral scale from an external reference; round 2 re-anchored bg-primary on rgb(26,26,26) — the reference's actual computed page background, per the person's own inspection — with bg-light/bg-surface progressively lighter so cards read as clearly raised above the page, per direct instruction. Border and the three accent/error/success dark values still don't exist in Figma — proposed as lightened tints of their light-mode counterparts for dark-background contrast."
+      "$note": "text-primary/text-muted come from real Figma variables (text-on-dark, text/on-dark-muted) — unchanged, already neutral gray (R=G=B), never had a tint problem. bg-primary/bg-surface/bg-light were previously bound to a Figma 'bg-dark' variable (#1A1A2E) that turned out to read as visibly blue-tinted once dark mode actually shipped. Revised twice on 2026-07-14: round 1 replaced the tint with a neutral scale from an external reference; round 2 re-anchored bg-primary on rgb(26,26,26) — the reference's actual computed page background, per the person's own inspection — with bg-light/bg-surface progressively lighter so cards read as clearly raised above the page, per direct instruction. All 10 dark-mode values (this block plus the primitive blue/red/green .400 steps above) confirmed 2026-08-20 against Figma's own 'Color' variable collection (VariableCollectionId:6263:8, Light mode 6263:0 / Dark mode 7152:0) — every value in that collection's Dark mode now matches these exactly, so the _PROPOSED flags are cleared. The old bg-dark (#1A1A2E) variable is a separate, unrelated leftover outside this collection — not touched by this confirmation."
     },
 
     "typography": {
@@ -142,7 +143,8 @@
       "caption-semibold": { "fontFamily": "{primitive.font.ui}", "weight": 600, "size": "14px", "lineHeight": "20px", "letterSpacing": "0px" },
       "caption-medium": { "fontFamily": "{primitive.font.ui}", "weight": 500, "size": "14px", "lineHeight": "20px", "letterSpacing": "0.07px", "$corrected": "Was 0.5px. Same bug as body/body-semibold/label: 0.5% of the 14px size is 0.07px, not 0.5px. Verified 2026-07-11 against the FastRouter illustration-caption node (6368:53641): Figma's own generated code renders it as tracking-[0.07px]." },
       "caption-regular": { "fontFamily": "{primitive.font.ui}", "weight": 400, "size": "14px", "lineHeight": "20px", "letterSpacing": "0.07px", "$corrected": "Was 0.5px. Same bug as body/body-semibold/label/caption-medium: 0.5% of the 14px size is 0.07px, not 0.5px. Verified 2026-07-11 against the FastRouter rejected-vs-shipped reason list (node 6459:54780): Figma's own generated code renders it as tracking-[0.07px]." },
-      "label": { "fontFamily": "{primitive.font.ui}", "weight": 500, "size": "13px", "lineHeight": "18px", "letterSpacing": "0.78px", "$corrected": "Was 6px. Same bug as body-semibold: Figma stores this style's tracking as a percentage (6%), read off as a raw number and given a \"px\" suffix without converting — 6% of the 13px size is 0.78px, not 6px (which would look extremely wide-tracked at this size). Verified 2026-07-11 against the FastRouter Hero node (6368:53597), where this style is used on the eyebrow row: Figma's own generated code renders it as tracking-[0.78px]." }
+      "label": { "fontFamily": "{primitive.font.ui}", "weight": 500, "size": "13px", "lineHeight": "18px", "letterSpacing": "0.78px", "$corrected": "Was 6px. Same bug as body-semibold: Figma stores this style's tracking as a percentage (6%), read off as a raw number and given a \"px\" suffix without converting — 6% of the 13px size is 0.78px, not 6px (which would look extremely wide-tracked at this size). Verified 2026-07-11 against the FastRouter Hero node (6368:53597), where this style is used on the eyebrow row: Figma's own generated code renders it as tracking-[0.78px]." },
+      "label-mono": { "fontFamily": "{primitive.font.mono}", "weight": 500, "size": "13px", "lineHeight": "18px", "letterSpacing": "0.78px", "$note": "New for the 'fastrouter-slides' horizontal-slide format only (portfolio case study interactive horizontal sliding approach, node 7213:122638) — do not apply to the locked vertical-scroll case studies, which keep using `label` (Google Sans Flex) unchanged. Same size/lineHeight/tracking as `label`, only the font family differs (Geist Mono Medium vs. Google Sans Flex Medium). Verified 2026-08-22 against the new Hero eyebrow row (node 7032:61517, 'B2B'/'AI Infrastructure' spans): Figma's raw variable defs reported letterSpacing as 6 (a percentage misread, same bug pattern as `label` above), but the node's own generated code renders tracking-[0.78px] literally — used that, not the raw 6." }
     },
 
     "radius_PROPOSED": {
