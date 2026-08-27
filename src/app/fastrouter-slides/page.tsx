@@ -6,22 +6,34 @@ import SegmentedRail from "@/components/fastrouter-slides/SegmentedRail";
 import HeroSlide from "@/components/fastrouter-slides/HeroSlide";
 import ProblemSlide from "@/components/fastrouter-slides/ProblemSlide";
 import ProductSlide from "@/components/fastrouter-slides/ProductSlide";
+import FeaturesSlide from "@/components/fastrouter-slides/FeaturesSlide";
+import DecisionSlide from "@/components/fastrouter-slides/DecisionSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
 
-const SLIDE_IDS = ["hero", "problem", "product"] as const;
+// "council" here is a preview placement for the first DecisionSlide (the LLM
+// Council "Verdict-first" decision) — a template, not necessarily its final
+// sequence position; it maps to the Council chapter tick for now.
+const SLIDE_IDS = ["hero", "problem", "product", "features", "council"] as const;
 // Parallel array of slide bodies, index-aligned with SLIDE_IDS — lets both
 // the touch stack and the pointer deck iterate rather than hardcoding two
 // JSX branches per slide that drift apart as chapters are added.
-const SLIDE_COMPONENTS = [HeroSlide, ProblemSlide, ProductSlide] as const;
+const SLIDE_COMPONENTS = [
+  HeroSlide,
+  ProblemSlide,
+  ProductSlide,
+  FeaturesSlide,
+  DecisionSlide,
+] as const;
 // Parallel array: does this slide's background respond to the global
 // light/dark toggle? Hero's is a static illustration (a photo doesn't
 // change with the toggle) — always wants the bright "on-dark" ticks that
 // were tuned against it. Problem's is `bg-bg-primary`, a token that itself
 // flips light/dark with the toggle. Product (index 2) is bg-bg-primary too,
-// same as Problem → follows theme. For a token-backed background the rail's
-// variant has to track the SAME toggle the background tracks, not a fixed
-// per-slide constant.
-const SLIDE_BACKGROUND_FOLLOWS_THEME = [false, true, true] as const;
+// same as Problem → follows theme; Features (index 3) likewise. For a
+// token-backed background the rail's variant has to track the SAME toggle the
+// background tracks, not a fixed per-slide constant. Council decision (index 4)
+// is bg-bg-primary too → follows theme.
+const SLIDE_BACKGROUND_FOLLOWS_THEME = [false, true, true, true, true] as const;
 // Fallback only, used before the real measurement below runs (SSR / first
 // paint). Header's real height (~74px) is measured directly rather than
 // hardcoded, so a font/label change to the Header can't silently desync the
@@ -49,7 +61,7 @@ const HEADER_HEIGHT_FALLBACK_PX = 64;
 //     was modelled on) are plain native scroll, not scroll-jacked.
 //
 //   - Touch: the deck's fixed-height model clips content on short phones, so
-//     touch stacks the slides in normal document flow with a fixed 120px gap
+//     touch stacks the slides in normal document flow with a fixed 48px gap
 //     and scrolls freely; the bottom status pill follows scroll (scroll-spy)
 //     instead of the rail.
 //
@@ -219,9 +231,9 @@ export default function FastRouterSlidesPage() {
     <>
       {isTouch ? (
         // Touch: free-scrolling vertical stack, each slide sized to its own
-        // content with a fixed 120px gap between slides. bg-bg-primary on each
+        // content with a fixed 48px gap between slides. bg-bg-primary on each
         // wrapper matches its slide's own background.
-        <div className="flex w-full flex-col gap-[120px]">
+        <div className="flex w-full flex-col gap-48px">
           {SLIDE_IDS.map((id, index) => {
             const Slide = SLIDE_COMPONENTS[index];
             return (
@@ -248,7 +260,17 @@ export default function FastRouterSlidesPage() {
           ref={scrollRef}
           tabIndex={-1}
           className="relative w-full snap-y snap-mandatory overflow-y-auto overscroll-contain outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          style={{ height: stageHeight }}
+          // --fr-header-h exposes the measured Header height to descendant
+          // slides. Vertically-centered slides (Problem, Decision) use it as
+          // bottom padding so their content centres on the true viewport
+          // centre, not the centre of the below-header stage (which sits
+          // header/2 lower — flagged directly as "feels a bit low").
+          style={
+            {
+              height: stageHeight,
+              "--fr-header-h": `${headerHeight}px`,
+            } as React.CSSProperties
+          }
         >
           {/* Tall track — creates the scroll length: one container-height per
               slide. */}

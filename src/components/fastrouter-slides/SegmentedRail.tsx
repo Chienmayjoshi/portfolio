@@ -40,7 +40,13 @@ const CHAPTERS: Chapter[] = [
   { id: "closing", label: "Closing", number: null },
 ];
 
-const BUILT_CHAPTER_IDS = new Set(["hero", "problem", "product"]);
+const BUILT_CHAPTER_IDS = new Set([
+  "hero",
+  "problem",
+  "product",
+  "features",
+  "council",
+]);
 
 // Rail color adapts to whatever's behind it — confirmed directly against
 // zainabkabira.com's own pager, which sets `.on-dark`/default (light) via

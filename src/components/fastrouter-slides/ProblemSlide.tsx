@@ -195,7 +195,7 @@ export default function ProblemSlide() {
           not a coincidence worth re-deriving. Desktop unchanged. */}
       <GridDepthLayer className="absolute inset-x-0 top-32px h-[200px] w-full md:top-0 md:h-[600px]" />
 
-      <div className="relative z-10 flex w-full max-w-[1440px] flex-col items-start gap-40px px-20px pt-40px md:h-full md:flex-row md:items-center md:justify-center md:gap-40px md:px-40px md:pt-0">
+      <div className="relative z-10 flex w-full max-w-[1440px] flex-col items-start gap-40px px-20px pt-40px md:h-full md:flex-row md:items-center md:justify-center md:gap-40px md:px-40px md:pt-0 md:pb-[var(--fr-header-h,0px)]">
         <ModelMarqueeColumn />
 
         <div className="flex w-full max-w-[680px] flex-col items-start gap-40px text-left md:items-center md:gap-24px md:text-center">
