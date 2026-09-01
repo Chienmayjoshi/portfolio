@@ -107,14 +107,15 @@
   --width-headline: 760px;      /* hero/heading copy column */
   --edge-padding: 24px;         /* PROPOSED — below ~1060px viewport, no mobile frame in Figma to source a real value from */
 
-  /* Added 2026-07-14 — FastRouterLogomark.tsx's wordmark paths were
-     exported from Figma as fill="var(--fill-0, black)"; this gives that
-     variable a real value. No .dark override needed: --color-text-primary
-     is already redefined inside .dark{}, and var() references resolve
-     dynamically against the live cascade, so this tracks it automatically
-     — same token every other text color already uses, so the logo can
-     never drift out of sync with the rest of the theme. */
-  --fill-0: var(--color-text-primary);
+  /* FastRouterLogomark.tsx's inline wordmark paths use fill="var(--fill-0,
+     black)"; this is its light-surface (default) value. Originally tied to
+     --color-text-primary so it flipped with the theme, but that made the
+     dark-mode wordmark the muted #D9D9D9 text tone. It now carries its own
+     ink, overridden per surface in the .dark / .light / .chapter-intro-invert
+     blocks below to a crisp #FAFAFA on dark (from the added
+     fr-logomark-white.svg) — including the theme-inverted header, where a
+     plain `dark:` swap would be wrong. Logo-only variable, not shared. */
+  --fill-0: #0D0D0D;
 }
 
 /* ==========================================================================
@@ -158,6 +159,10 @@
   --color-text-accent: #5C74E8;
   --color-text-error: #E0685A;
   --color-text-success: #6FC24A;
+  /* FastRouter logo wordmark ink — crisp white on any dark surface, per the
+     added fr-logomark-white.svg (#FAFAFA, not the muted #D9D9D9 text tone).
+     Applies to .dark AND .chapter-intro-invert (both dark surfaces). */
+  --fill-0: #FAFAFA;
 }
 
 /* Scoped "force light" override — the reverse of .dark{} above. Added for
@@ -183,6 +188,53 @@
   --color-text-accent: #1A34D7;
   --color-text-error: #C0392B;
   --color-text-success: #48A825;
+  /* FastRouter logo wordmark ink — dark on any light surface (fr-logomark.svg).
+     Applies to .light AND .dark .chapter-intro-invert (both light surfaces). */
+  --fill-0: #0D0D0D;
+}
+
+/* Chapter-intro slides (fastrouter-slides) render INVERTED vs the global
+   theme — a deliberate surface flip that signals "you're entering a new
+   feature set" as the reader scrolls the case study. Global light -> intro
+   dark; global dark -> intro light. Unlike the plain force `.dark` / `.light`
+   blocks above (which pin ONE theme regardless of the page), this keys off the
+   `.dark` ancestor so it tracks the toggle and always lands OPPOSITE to it.
+   CSS-only on purpose: no JS / client state, so it's SSR-safe and can't flash
+   the wrong theme for dark-mode readers on first paint (the way a
+   useTheme-driven class would, since ThemeProvider hydrates to light first).
+   Values mirror the .dark / .light blocks above — keep all three in sync. */
+.chapter-intro-invert {
+  /* page light (default) -> dark surface (mirrors .dark) */
+  --color-bg-primary: #1A1A1A;
+  --color-bg-surface: #282828;
+  --color-bg-light: #212121;
+  --color-border-default: rgba(255, 255, 255, 0.08);
+  --color-border-frame: rgba(255, 255, 255, 0.14);
+  --color-text-primary: #D9D9D9;
+  --color-text-muted: #888888;
+  --color-text-accent: #5C74E8;
+  --color-text-error: #E0685A;
+  --color-text-success: #6FC24A;
+  /* FastRouter logo wordmark ink — crisp white on any dark surface, per the
+     added fr-logomark-white.svg (#FAFAFA, not the muted #D9D9D9 text tone).
+     Applies to .dark AND .chapter-intro-invert (both dark surfaces). */
+  --fill-0: #FAFAFA;
+}
+.dark .chapter-intro-invert {
+  /* page dark -> light surface (mirrors .light) */
+  --color-bg-primary: #F9F9F7;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-light: #F5F5F5;
+  --color-border-default: #E5E5E5;
+  --color-border-frame: #D5D5D5;
+  --color-text-primary: #0D0D0D;
+  --color-text-muted: #6B6B6B;
+  --color-text-accent: #1A34D7;
+  --color-text-error: #C0392B;
+  --color-text-success: #48A825;
+  /* FastRouter logo wordmark ink — dark on any light surface (fr-logomark.svg).
+     Applies to .light AND .dark .chapter-intro-invert (both light surfaces). */
+  --fill-0: #0D0D0D;
 }
 
 /* ==========================================================================

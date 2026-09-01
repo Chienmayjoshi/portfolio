@@ -7,13 +7,28 @@ import HeroSlide from "@/components/fastrouter-slides/HeroSlide";
 import ProblemSlide from "@/components/fastrouter-slides/ProblemSlide";
 import ProductSlide from "@/components/fastrouter-slides/ProductSlide";
 import FeaturesSlide from "@/components/fastrouter-slides/FeaturesSlide";
+import CouncilIntroSlide from "@/components/fastrouter-slides/CouncilIntroSlide";
+import BriefSlide from "@/components/fastrouter-slides/BriefSlide";
 import DecisionSlide from "@/components/fastrouter-slides/DecisionSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
+import { useHeaderInvertSurface } from "@/components/shared/HeaderProvider";
 
-// "council" here is a preview placement for the first DecisionSlide (the LLM
-// Council "Verdict-first" decision) — a template, not necessarily its final
-// sequence position; it maps to the Council chapter tick for now.
-const SLIDE_IDS = ["hero", "problem", "product", "features", "council"] as const;
+// Per-slide REACT KEY / DOM-anchor ids — these must be unique, so the two
+// slides that both belong to the Council chapter carry distinct ids
+// ("council-intro" = the feature title card, "council" = the first
+// DecisionSlide preview). Which rail tick each one lights is a separate
+// mapping (SLIDE_CHAPTER_IDS below), so both can point at the "council"
+// chapter without colliding as keys. The DecisionSlide slot is still a
+// preview placement (a template, not necessarily its final sequence spot).
+const SLIDE_IDS = [
+  "hero",
+  "problem",
+  "product",
+  "features",
+  "council-intro",
+  "council-brief",
+  "council",
+] as const;
 // Parallel array of slide bodies, index-aligned with SLIDE_IDS — lets both
 // the touch stack and the pointer deck iterate rather than hardcoding two
 // JSX branches per slide that drift apart as chapters are added.
@@ -22,18 +37,47 @@ const SLIDE_COMPONENTS = [
   ProblemSlide,
   ProductSlide,
   FeaturesSlide,
+  CouncilIntroSlide,
+  BriefSlide,
   DecisionSlide,
 ] as const;
-// Parallel array: does this slide's background respond to the global
-// light/dark toggle? Hero's is a static illustration (a photo doesn't
-// change with the toggle) — always wants the bright "on-dark" ticks that
-// were tuned against it. Problem's is `bg-bg-primary`, a token that itself
-// flips light/dark with the toggle. Product (index 2) is bg-bg-primary too,
-// same as Problem → follows theme; Features (index 3) likewise. For a
-// token-backed background the rail's variant has to track the SAME toggle the
-// background tracks, not a fixed per-slide constant. Council decision (index 4)
-// is bg-bg-primary too → follows theme.
-const SLIDE_BACKGROUND_FOLLOWS_THEME = [false, true, true, true, true] as const;
+// Parallel array: which SegmentedRail chapter tick each slide lights up.
+// Distinct from SLIDE_IDS (React keys) because several slides can share one
+// chapter — the Council intro and the first decision are both chapter
+// "council", so the rail keeps that one tick active across both. Every value
+// here must be an id that exists in SegmentedRail's CHAPTERS table, or the
+// rail's findIndex returns -1 and crashes.
+const SLIDE_CHAPTER_IDS = [
+  "hero",
+  "problem",
+  "product",
+  "features",
+  "council",
+  "council",
+  "council",
+] as const;
+// Parallel array: how each slide's background relates to the global toggle,
+// which decides whether the rail's ticks read light or dark over it.
+//   - "fixed-dark": background doesn't track the toggle at all. Hero's is a
+//     static illustration (a photo doesn't change with the toggle) — always
+//     wants the bright "on-dark" ticks tuned against it.
+//   - "follow": a `bg-bg-primary` surface that flips WITH the toggle, so the
+//     rail must track the SAME toggle (Problem/Product/Features, and the
+//     Council decision — all plain token surfaces).
+//   - "invert": a `chapter-intro-invert` surface that renders OPPOSITE to the
+//     toggle (globals.css) as a "new feature" signal, so the rail must be the
+//     inverse of the toggle too. Council intro (index 4) is the only one so
+//     far; the coming Observability/Evaluations intros will join it.
+type SlideRailMode = "fixed-dark" | "follow" | "invert";
+const SLIDE_RAIL_MODE: readonly SlideRailMode[] = [
+  "fixed-dark",
+  "follow",
+  "follow",
+  "follow",
+  "invert",
+  "follow",
+  "follow",
+];
 // Fallback only, used before the real measurement below runs (SSR / first
 // paint). Header's real height (~74px) is measured directly rather than
 // hardcoded, so a font/label change to the Header can't silently desync the
@@ -81,6 +125,22 @@ export default function FastRouterSlidesPage() {
   // branch (that stack isn't rendered there).
   const mobileSlideRefs = useRef<(HTMLElement | null)[]>([]);
   const { isDark } = useTheme();
+  const { setInvertSurface } = useHeaderInvertSurface();
+
+  // Tell the global Header to invert its chrome whenever the active slide is an
+  // "invert" surface (the chapter-intro slides), so the header matches the
+  // slide instead of leaving global-theme chrome stranded over an inverted
+  // card. POINTER ONLY: on the desktop deck the whole viewport is the one
+  // active slide, so inverting the header is correct. On the touch stack the
+  // header sits over whatever's scrolled to the TOP — not necessarily the
+  // "active" (scroll-spy) slide — so inverting it turns the mobile gradient
+  // scrim dark over a still-light section above the intro. Mobile keeps the
+  // header (and its white scrim) at the global theme. Cleanup resets it on
+  // slide change and when the reader leaves the deck.
+  useEffect(() => {
+    setInvertSurface(!isTouch && SLIDE_RAIL_MODE[activeIndex] === "invert");
+    return () => setInvertSurface(false);
+  }, [activeIndex, isTouch, setInvertSurface]);
 
   // Latest activeIndex for the pointer deck's scroll/key handlers, which are
   // attached once (in an effect keyed on isTouch) and so can't read it from a
@@ -219,13 +279,24 @@ export default function FastRouterSlidesPage() {
     domain: "AI Infrastructure",
   };
 
-  const railTheme = SLIDE_BACKGROUND_FOLLOWS_THEME[activeIndex]
-    ? isDark
+  // "follow" tracks the toggle (dark page → on-dark ticks); "invert" is the
+  // opposite (dark page → light slide → on-light ticks); "fixed-dark" is
+  // always on-dark (Hero's static illustration).
+  const railMode = SLIDE_RAIL_MODE[activeIndex];
+  const railTheme =
+    railMode === "fixed-dark"
       ? "on-dark"
-      : "on-light"
-    : "on-dark";
+      : railMode === "invert"
+        ? isDark
+          ? "on-light"
+          : "on-dark"
+        : isDark
+          ? "on-dark"
+          : "on-light";
 
-  const stageHeight = `calc(100dvh - ${headerHeight}px)`;
+  // The deck fills the WHOLE viewport (not the below-header remainder) and is
+  // pulled up behind the header — see the scroll container's marginTop below.
+  const stageHeight = "100dvh";
 
   return (
     <>
@@ -260,14 +331,25 @@ export default function FastRouterSlidesPage() {
           ref={scrollRef}
           tabIndex={-1}
           className="relative w-full snap-y snap-mandatory overflow-y-auto overscroll-contain outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          // --fr-header-h exposes the measured Header height to descendant
-          // slides. Vertically-centered slides (Problem, Decision) use it as
-          // bottom padding so their content centres on the true viewport
-          // centre, not the centre of the below-header stage (which sits
-          // header/2 lower — flagged directly as "feels a bit low").
+          // The deck fills the whole viewport and is pulled UP behind the
+          // sticky Header (marginTop: -headerHeight), so each full-height slide
+          // extends under the transparent header and the slide's own
+          // background covers the header zone. This is how the reference
+          // (zainabkabira.com) keeps the header seamless across a horizontal
+          // slide between a light and a dark panel: the split IS the panels
+          // showing through a transparent fixed nav, not the nav painting a
+          // band that can only be one colour at a time. The header just swaps
+          // its chrome colour (Header.tsx / invertSurface). Content still
+          // centres on the true viewport centre — the stage is now the full
+          // viewport. `--fr-header-h` is re-exposed so TOP-ANCHORED slides
+          // (Product, Hero — content that starts at the top rather than
+          // centring) can pad their content down by the header height and not
+          // be overlapped by the transparent header; centred slides don't need
+          // it (their content sits at ~50dvh, clear of the header).
           style={
             {
               height: stageHeight,
+              marginTop: -headerHeight,
               "--fr-header-h": `${headerHeight}px`,
             } as React.CSSProperties
           }
@@ -324,7 +406,7 @@ export default function FastRouterSlidesPage() {
       )}
 
       <SegmentedRail
-        activeId={SLIDE_IDS[activeIndex]}
+        activeId={SLIDE_CHAPTER_IDS[activeIndex]}
         pillContext={pillContext}
         onNavigate={navigateTo}
         theme={railTheme}

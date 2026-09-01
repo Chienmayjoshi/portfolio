@@ -11,10 +11,15 @@
 //
 // The wordmark paths were exported from Figma as `fill="var(--fill-0,
 // black)"` — Figma anticipated variable-based theming, it just never had
-// a value to resolve to while loaded externally. `--fill-0` is now
-// defined in globals.css as `var(--color-text-primary)`, so these paths
-// track the same token every other text color in the app already uses,
-// automatically flipping with the `.dark` class — no new color introduced.
+// a value to resolve to while loaded externally. `--fill-0` is defined in
+// globals.css and overridden per SURFACE (not per global theme): dark ink
+// on any light surface, and a crisp #FAFAFA on any dark surface — the
+// colour of the added public/images/fastrouter/fr-logomark-white.svg. It's
+// keyed on the surface (.dark / .chapter-intro-invert etc.), not a `dark:`
+// utility, so it stays correct on the theme-inverted header too — where the
+// pill is dark while the page is light, and a `dark:`-based swap would show
+// the wrong (dark) wordmark. Staying inline (vs swapping to the .svg file as
+// an <img>) is what makes that surface-accurate colouring possible at all.
 //
 // The "F" mark icon shape keeps its hardcoded `#2E52E5` fill — that's a
 // deliberate brand-blue identity color, not a text-on-background contrast

@@ -5,7 +5,10 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/shared/ThemeToggle";
-import { useHeaderCaseStudyPill } from "@/components/shared/HeaderProvider";
+import {
+  useHeaderCaseStudyPill,
+  useHeaderInvertSurface,
+} from "@/components/shared/HeaderProvider";
 
 // Case-study routes get "← Back" (to "/", the project listing) in the left
 // slot instead of the site logo — you're inside one project, not browsing
@@ -142,6 +145,7 @@ const NAV_ITEMS: { label: string; href: string | null }[] = [
 // how wide the logo or toggle are.
 export default function Header() {
   const { caseStudyPill } = useHeaderCaseStudyPill();
+  const { invertSurface } = useHeaderInvertSurface();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isCaseStudyPage = CASE_STUDY_ROUTE_PREFIXES.some((prefix) =>
@@ -149,7 +153,27 @@ export default function Header() {
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full">
+    // `chapter-intro-invert` (globals.css) re-scopes this subtree's color
+    // tokens to the INVERSE of the global theme so the header's CHROME (pill,
+    // toggle, back link, mobile scrim — all token-driven) matches a slide that
+    // inverts, instead of leaving light chrome stranded over a dark slide.
+    // Driven per-slide by the deck via HeaderProvider; empty on normal pages
+    // leaves the header at the global theme.
+    //
+    // The header stays BACKGROUND-TRANSPARENT (no bg utility). The
+    // fastrouter-slides deck is pulled up to full-viewport height behind this
+    // header (see page.tsx), so the slide's own background shows THROUGH the
+    // header — including, mid-transition, a clean vertical split when a light
+    // and a dark slide are side by side. That's the reference's (zainabkabira)
+    // technique: a transparent fixed nav over full-height panels, only its text
+    // colour swapping. So there's no background band to keep in sync here; this
+    // class only flips the chrome colour. The token-consuming children keep
+    // their own color<->color transition-colors so the chrome fades.
+    <header
+      className={`sticky top-0 z-50 w-full ${
+        invertSurface ? "chapter-intro-invert" : ""
+      }`}
+    >
       {/* Mobile-only gradient scrim (Figma reference node 7284:440). On small
           screens the page content scrolls up under this sticky header and the
           bare icons (back arrow, toggle, menu) were getting lost in it. A
@@ -216,7 +240,7 @@ export default function Header() {
           layout
           transition={{ layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } }}
           aria-label="Site"
-          className="col-start-2 relative hidden items-center justify-self-center overflow-hidden rounded-full border border-border-default bg-bg-surface px-24px py-12px font-ui text-[16px] text-text-primary tracking-[0.08px] md:flex"
+          className="col-start-2 relative hidden items-center justify-self-center overflow-hidden rounded-full border border-border-default bg-bg-surface px-24px py-12px font-ui text-[16px] text-text-primary tracking-[0.08px] transition-colors duration-300 md:flex"
         >
           {/* Unconditionally hidden below md — corrected from an earlier
               "shows once a case-study identity exists" assumption that

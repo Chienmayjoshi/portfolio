@@ -22,6 +22,14 @@ export interface CaseStudyPill {
 interface HeaderContextValue {
   caseStudyPill: CaseStudyPill | null;
   setCaseStudyPill: (pill: CaseStudyPill | null) => void;
+  // When true, the Header renders as the INVERSE of the global theme, to
+  // match a slide that does the same (fastrouter-slides chapter-intro slides
+  // — see .chapter-intro-invert in globals.css). Kept here, not on
+  // ThemeProvider, because it's a transient per-slide surface state the deck
+  // pushes as the reader pages through it, not the reader's own theme choice.
+  // A page that never sets it leaves the header at the normal global theme.
+  invertSurface: boolean;
+  setInvertSurface: (invert: boolean) => void;
 }
 
 const HeaderContext = createContext<HeaderContextValue | null>(null);
@@ -30,9 +38,17 @@ export function HeaderProvider({ children }: { children: ReactNode }) {
   const [caseStudyPill, setCaseStudyPill] = useState<CaseStudyPill | null>(
     null
   );
+  const [invertSurface, setInvertSurface] = useState(false);
 
   return (
-    <HeaderContext.Provider value={{ caseStudyPill, setCaseStudyPill }}>
+    <HeaderContext.Provider
+      value={{
+        caseStudyPill,
+        setCaseStudyPill,
+        invertSurface,
+        setInvertSurface,
+      }}
+    >
       {children}
     </HeaderContext.Provider>
   );
@@ -46,4 +62,20 @@ export function useHeaderCaseStudyPill() {
     );
   }
   return ctx;
+}
+
+// Companion to useHeaderCaseStudyPill for the header's inverted-surface state
+// — a separate hook so a page that only drives the surface (or only the pill)
+// reads just what it needs. Both share the one HeaderContext above.
+export function useHeaderInvertSurface() {
+  const ctx = useContext(HeaderContext);
+  if (!ctx) {
+    throw new Error(
+      "useHeaderInvertSurface must be used within a HeaderProvider"
+    );
+  }
+  return {
+    invertSurface: ctx.invertSurface,
+    setInvertSurface: ctx.setInvertSurface,
+  };
 }

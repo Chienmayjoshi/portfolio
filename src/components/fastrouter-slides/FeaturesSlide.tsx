@@ -71,11 +71,16 @@ function Decision({
       // Bottom border: always on mobile (its cards are dividers by design), but
       // on desktop only ON HOVER (transparent by default so there's no layout
       // shift, coloured in on hover) — per direct instruction. `group` so the
-      // ghost number can react to the row's hover too.
-      className="group relative flex w-full items-start gap-12px border-b border-border-default py-24px transition-colors md:items-center md:gap-32px md:border-transparent md:py-32px md:hover:border-border-default"
+      // ghost number can react to the row's hover too. `last:border-b-0` drops
+      // the divider on the final row — it separates nothing below it (and sat
+      // directly above the next, dark, section).
+      className="group relative flex w-full items-start gap-12px border-b border-border-default py-24px transition-colors last:border-b-0 md:items-center md:gap-32px md:border-transparent md:py-32px md:hover:border-border-default"
     >
-      {/* Mobile thumbnail — default-visible on the left (no hover on touch). */}
-      <div className="relative size-56px shrink-0 overflow-hidden md:hidden">
+      {/* Mobile thumbnail — default-visible on the left (no hover on touch).
+          56px is off this project's spacing scale, so it must be an arbitrary
+          value — the named `size-56px` generates nothing and collapsed the
+          thumbnail to 0 (invisible on mobile). */}
+      <div className="relative size-[56px] shrink-0 overflow-hidden md:hidden">
         <Image src={image} alt="" fill className="object-contain" sizes="56px" />
       </div>
 
@@ -134,7 +139,7 @@ export default function FeaturesSlide() {
     >
       <GridDepthLayer className="absolute inset-x-0 top-32px h-[200px] w-full md:top-0 md:h-[800px]" />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col items-start gap-40px px-20px pt-56px md:h-full md:items-center md:justify-center md:gap-0 md:px-0 md:pt-0 md:pb-[var(--fr-header-h,0px)]">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col items-start gap-40px px-20px pt-[56px] md:h-full md:items-center md:justify-center md:gap-0 md:px-0 md:pt-0">
         {/* Headline — left on mobile (32/40), centered on desktop (56/64),
             matching the other slides' convention. */}
         <h1 className="w-full font-display text-[32px] text-text-primary leading-[40px] tracking-[-0.32px] md:max-w-[680px] md:py-40px md:text-center md:text-[56px] md:leading-[64px] md:tracking-[-0.56px]">

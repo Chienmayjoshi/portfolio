@@ -289,22 +289,28 @@ export default function SegmentedRail({
           Shown for touch devices at any width (not just <768px): a landscape
           phone or tablet is wide but still wants this, not the hover rail —
           the page gates it via the `variant` prop rather than a CSS width
-          class. Theme-adaptive (flagged directly): in light mode it's a dark
-          pill (Figma node 7275:427 / 7284:837), in dark mode it inverts to a
-          light pill so it doesn't disappear against a now-dark slide
-          background. Done with dark: overrides on literal hex rather than the
-          auto-flipping bg tokens, because the pill is an INVERSE surface — it
-          wants the opposite tone from the page, not the same one, at each
-          theme. Light values mirror the desktop RAIL_COLORS "on-light" pair;
-          dark values mirror "on-dark" (white pill, dark ink). */}
+          class.
+
+          Colors come from RAIL_COLORS[theme] — the SAME source the desktop
+          rail uses — not from global `dark:` overrides. The pill is an INVERSE
+          surface (a dark pill on a light slide, a light pill on a dark one), so
+          what it actually needs to track is "what tone is the slide behind me,"
+          which is exactly what `theme` (on-dark / on-light) encodes. The page
+          derives that from the active slide including the chapter-intro INVERT
+          case, so this now flips correctly over an inverted slide too — the old
+          `dark:` logic keyed off the global theme and so stayed dark over a
+          dark inverted slide (the reported bug). on-light gives the dark pill
+          (Figma node 7275:427 / 7284:837); on-dark the light pill. The number
+          uses the pill's own text tone at 60% (same as the desktop hover
+          pill), the divider its pillDivider tone. */}
       {variant === "pill" && (
-      <div className="fixed bottom-48px left-1/2 z-20 flex w-[200px] -translate-x-1/2 items-center gap-8px rounded-[24px] bg-[#0D0D0D] px-16px py-12px shadow-[0px_6px_20px_0px_rgba(0,0,0,0.2)] dark:bg-white">
+      <div className={`fixed bottom-48px left-1/2 z-20 flex w-[200px] -translate-x-1/2 items-center gap-8px rounded-[24px] px-16px py-12px shadow-[0px_6px_20px_0px_rgba(0,0,0,0.2)] transition-colors duration-300 ${colors.pillBg}`}>
         {activeNumber && (
           <>
-            <span className="shrink-0 font-mono font-medium text-[13px] text-[#D9D9D9] uppercase tracking-[0.78px] dark:text-[#6B6B6B]">
+            <span className={`shrink-0 font-mono font-medium text-[13px] uppercase tracking-[0.78px] opacity-60 ${colors.pillText}`}>
               {activeNumber}
             </span>
-            <span className="h-[14px] w-px shrink-0 bg-[#6B6B6B] dark:bg-[#0D0D0D]/30" />
+            <span className={`h-[14px] w-px shrink-0 ${colors.pillDivider}`} />
           </>
         )}
         {/* flex-1 + text-center: the number/divider sit left, the label
@@ -312,7 +318,7 @@ export default function SegmentedRail({
             fixed 200px pill (Figma node 7275:427) hold its width steady as
             the label text changes between sections instead of the pill
             resizing per label — the point of pinning the width. */}
-        <span className="flex-1 text-center font-ui font-medium text-[14px] text-white leading-[20px] tracking-[0.07px] dark:text-[#0D0D0D]">
+        <span className={`flex-1 text-center font-ui font-medium text-[14px] leading-[20px] tracking-[0.07px] ${colors.pillText}`}>
           {activeLabel}
         </span>
       </div>

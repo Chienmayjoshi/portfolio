@@ -60,7 +60,7 @@ export default function ProductSlide() {
           bracket values, not spacing-scale tokens. */}
       <GridDepthLayer className="absolute inset-x-0 top-32px h-[200px] w-full [--grid-cell:24px] md:top-0 md:h-[800px] md:[--grid-cell:40px]" />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col items-start gap-40px px-20px pt-40px md:items-center md:gap-0 md:px-0 md:pt-0">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col items-start gap-40px px-20px pt-40px md:items-center md:gap-0 md:px-0 md:pt-[var(--fr-header-h,0px)]">
         {/* Headline — left-aligned on mobile to match the Problem slide (per
             direct ask, overriding Figma node 7275:390's text-center),
             centered on desktop. Desktop wrapper rhythm is py-40 (node
