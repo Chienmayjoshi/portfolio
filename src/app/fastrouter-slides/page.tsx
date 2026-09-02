@@ -11,7 +11,14 @@ import CouncilIntroSlide from "@/components/fastrouter-slides/CouncilIntroSlide"
 import BriefSlide from "@/components/fastrouter-slides/BriefSlide";
 import ConceptualGroundingSlide from "@/components/fastrouter-slides/ConceptualGroundingSlide";
 import ReframeSlide from "@/components/fastrouter-slides/ReframeSlide";
-import DecisionSlide from "@/components/fastrouter-slides/DecisionSlide";
+import {
+  CouncilDecision01,
+  CouncilDecision02,
+  CouncilDecision03,
+  CouncilDecision04,
+} from "@/components/fastrouter-slides/DecisionSlide";
+import RejectedVsShippedSlide from "@/components/fastrouter-slides/RejectedVsShippedSlide";
+import ObservabilityIntroSlide from "@/components/fastrouter-slides/ObservabilityIntroSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { useHeaderInvertSurface } from "@/components/shared/HeaderProvider";
 
@@ -31,7 +38,12 @@ const SLIDE_IDS = [
   "council-brief",
   "council-grounding",
   "council-reframe",
-  "council",
+  "council-rejected-shipped",
+  "council-decision-01",
+  "council-decision-02",
+  "council-decision-03",
+  "council-decision-04",
+  "observability-intro",
 ] as const;
 // Parallel array of slide bodies, index-aligned with SLIDE_IDS — lets both
 // the touch stack and the pointer deck iterate rather than hardcoding two
@@ -45,7 +57,12 @@ const SLIDE_COMPONENTS = [
   BriefSlide,
   ConceptualGroundingSlide,
   ReframeSlide,
-  DecisionSlide,
+  RejectedVsShippedSlide,
+  CouncilDecision01,
+  CouncilDecision02,
+  CouncilDecision03,
+  CouncilDecision04,
+  ObservabilityIntroSlide,
 ] as const;
 // Parallel array: which SegmentedRail chapter tick each slide lights up.
 // Distinct from SLIDE_IDS (React keys) because several slides can share one
@@ -63,6 +80,11 @@ const SLIDE_CHAPTER_IDS = [
   "council",
   "council",
   "council",
+  "council",
+  "council",
+  "council",
+  "council",
+  "observability",
 ] as const;
 // Parallel array: how each slide's background relates to the global toggle,
 // which decides whether the rail's ticks read light or dark over it.
@@ -87,6 +109,11 @@ const SLIDE_RAIL_MODE: readonly SlideRailMode[] = [
   "follow",
   "follow",
   "follow",
+  "follow",
+  "follow",
+  "follow",
+  "follow",
+  "invert",
 ];
 // Fallback only, used before the real measurement below runs (SSR / first
 // paint). Header's real height (~74px) is measured directly rather than
@@ -200,6 +227,20 @@ export default function FastRouterSlidesPage() {
     const clamped = Math.max(0, Math.min(SLIDE_IDS.length - 1, index));
     sc.scrollTo({ top: clamped * sc.clientHeight, behavior: "smooth" });
   }, []);
+
+  // Rail click handler. The rail reports a CHAPTER id; this resolves it to
+  // that chapter's FIRST slide. Chapters and slides stopped being 1:1 once
+  // Council grew to eight slides, so the rail can no longer hand over an
+  // index — see the onNavigate note in SegmentedRail.tsx.
+  const navigateToChapter = useCallback(
+    (chapterId: string) => {
+      const first = SLIDE_CHAPTER_IDS.indexOf(
+        chapterId as (typeof SLIDE_CHAPTER_IDS)[number]
+      );
+      if (first !== -1) navigateTo(first);
+    },
+    [navigateTo]
+  );
 
   // Pointer deck driver: map the scroll container's vertical scroll position
   // onto the horizontal row's translateX, and mirror it into activeIndex for
@@ -418,7 +459,7 @@ export default function FastRouterSlidesPage() {
       <SegmentedRail
         activeId={SLIDE_CHAPTER_IDS[activeIndex]}
         pillContext={pillContext}
-        onNavigate={navigateTo}
+        onNavigate={navigateToChapter}
         theme={railTheme}
         // Same touch signal as the layout branch above, so the rail (pointer)
         // vs. status pill (touch) choice always matches which stage is

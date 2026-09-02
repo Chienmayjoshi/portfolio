@@ -46,6 +46,7 @@ const BUILT_CHAPTER_IDS = new Set([
   "product",
   "features",
   "council",
+  "observability",
 ]);
 
 // Rail color adapts to whatever's behind it — confirmed directly against
@@ -97,12 +98,20 @@ interface SegmentedRailProps {
    * moves past "hero". In practice this stays inert until a second
    * chapter exists — expected, not a bug. */
   pillContext: CaseStudyPill;
-  /** Called with a chapter's index when a built segment is clicked — the
-   * page owns the actual slide-stage transform (translateX), this just
-   * reports intent. Replaces an earlier scrollIntoView-based click
-   * handler, which stopped making sense once slides moved from document
-   * flow into a horizontally-translated stage. */
-  onNavigate: (index: number) => void;
+  /** Called with a chapter's ID when a built segment is clicked — the page
+   * owns the actual slide-stage transform (translateX), this just reports
+   * intent. Replaces an earlier scrollIntoView-based click handler, which
+   * stopped making sense once slides moved from document flow into a
+   * horizontally-translated stage.
+   *
+   * Reports the chapter ID, not its index. It used to pass the index, which
+   * the page fed straight to its slide-index navigation — correct only while
+   * every chapter was exactly one slide, so chapter N *was* slide N. That
+   * stopped being true the moment the Council chapter grew to eight slides:
+   * chapter 5 (Observability) would have scrolled to slide 5 (council-brief).
+   * The page resolves the ID to the chapter's FIRST slide instead, which is
+   * right regardless of how many slides a chapter holds. */
+  onNavigate: (chapterId: string) => void;
   /** Which color variant to render — see RailTheme above. Defaults to
    * "on-dark" (the rail's original, only-ever-tested treatment). */
   theme?: RailTheme;
@@ -262,7 +271,7 @@ export default function SegmentedRail({
                 );
               }}
               onMouseLeave={() => setHoveredIndex(null)}
-              onClick={() => onNavigate(index)}
+              onClick={() => onNavigate(chapter.id)}
               className={`relative flex h-16px max-w-60px flex-1 items-center ${
                 isBuilt ? "cursor-pointer" : "cursor-default"
               }`}

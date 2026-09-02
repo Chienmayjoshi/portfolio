@@ -1,103 +1,195 @@
 import Image from "next/image";
 import GridDepthLayer from "@/components/shared/GridDepthLayer";
 import ThemeSwap from "@/components/shared/ThemeSwap";
+import ThemeAwareVideo from "@/components/shared/ThemeAwareVideo";
 import DecisionAssetFrame from "@/components/shared/DecisionAssetFrame";
 
-// Reusable TEMPLATE for a single "decision" slide in the fastrouter-slides deck
-// — Figma desktop node 7202:99233 / mobile 7295:1742, file
-// 2aoIFdaJMyNBEWeQESBEzG. Every decision follows the same shape (a ghost
-// number, a "DECISION · {chapter}" eyebrow, a headline, a Chose / Gave up /
-// Why? rationale, a pull-quote, and a product-screenshot capsule), so this
-// takes a `decision` prop and defaults to the first one built (LLM Council,
-// "Verdict-first layout"). Add more by passing a different `decision`.
+// Reusable TEMPLATE for a single "decision" slide in the fastrouter-slides
+// deck, plus the four Council decisions themselves. Figma desktop nodes
+// 7202:99233 / 100116 / 100926 / 101754 (decisions 01-04) and mobile 7295:1742,
+// file 2aoIFdaJMyNBEWeQESBEzG. Every decision follows the same shape (a ghost
+// number, a "DECISION · {chapter}" eyebrow, a headline, a Chose / Gave up / Why
+// rationale, and a product-screenshot capsule), with two optional slots that
+// only some frames use — see `subtitle` and `quote` below.
+//
+// MOBILE: Figma has a mobile frame for decision 01 ONLY (7295:1742); 02-04 are
+// desktop-only frames. The mobile treatment is therefore the template's,
+// verified against 01's frame and applied to all four — not four separate
+// pixel matches. If mobile frames land for 02-04 later, re-verify rather than
+// assuming this held.
 //
 // Layout differs by breakpoint: desktop is two columns (text left 520px,
 // capsule right), mobile stacks the capsule inline in the text column. Both
 // vertically centred on desktop, a top-anchored stack on mobile.
 //
+// Desktop vertical rhythm, measured off decision 02's content frame
+// (7202:100877, the one exercising every slot): number+eyebrow block -> 24 ->
+// headline -> 24 -> subtitle, then 56 to the rationale group, whose three
+// blocks sit 24 apart. Matches what the template already did for 01.
+//
 // CAPSULE FRAMING: uses the shared DecisionAssetFrame — the exact gradient
 // box + stroke ring + right-edge fade the vertical-scroll case study uses on
 // its decision screenshots (FiveDecisions.tsx). The frame is token-driven
 // (bg-surface / bg-primary / border-frame), so it adapts to the theme on its
-// own; the screenshot inside is a plain light/dark pair swapped by ThemeSwap.
-// This replaced an earlier approach that baked the frame into the light webp
-// export (which had no dark twin) — using the shared frame gives one
-// consistent, theme-correct treatment across both slide + vertical-scroll
-// formats. Same 720×460 capsule proportion on mobile too (the frame is
-// responsive), matching the vertical scroll rather than a bespoke mobile crop.
+// own; the asset inside is a plain light/dark pair. Same 720×460 capsule
+// proportion on mobile too (the frame is responsive), matching the vertical
+// scroll rather than a bespoke mobile crop.
+//
+// Two of the four assets are SCREEN RECORDINGS, not stills (decisions 02 and
+// 04 — the whole point of both is motion over time: stages appearing as
+// deliberation runs, and a strip that stays put as panels collapse). Hence
+// `asset.kind`: "image" goes through ThemeSwap (CSS-only, no flash), "video"
+// through ThemeAwareVideo (one <video>, src picked from context, so only the
+// active theme's file is fetched). Same split, same files, as the
+// vertical-scroll route's FiveDecisions.tsx.
+//
+// FIGMA INCONSISTENCY (flagged, normalized — not silently picked): decision
+// 01's frame labels the third rationale block "WHY?" while 02, 03 and 04 all
+// label it "WHY", as does the shipped vertical-scroll case study. Normalized
+// to "Why" here on that 3-frames-plus-shipped-route majority. Decision 01's
+// Figma frame is the outlier and should lose the question mark there.
+interface DecisionAsset {
+  kind: "image" | "video";
+  light: string;
+  dark: string;
+  alt: string;
+}
+
 interface Decision {
   id: string;
   number: string;
   chapter: string;
   headline: string;
+  /** Accented line directly under the headline — same treatment as `quote`,
+   * different slot. Only decision 02 has one. */
+  subtitle?: string;
   chose: string;
   gaveUp: string;
   why: string;
-  quote: string;
-  assetLight: string;
-  assetDark: string;
-  assetAlt: string;
+  /** Accented pull-quote closing the column. Only decision 01 has one. */
+  quote?: string;
+  asset: DecisionAsset;
 }
 
-const COUNCIL_VERDICT_FIRST: Decision = {
-  id: "council",
-  number: "01",
-  chapter: "LLM COUNCIL",
-  headline: "Verdict-first layout",
-  chose: "Final verdict at the top. Arguments and peer review stacked below.",
-  gaveUp: "Chronological order — the narrative journey the team expected.",
-  why: "If users read arguments first they form an opinion before the verdict arrives. Showing the verdict cold preserves its objectivity as an independent signal.",
-  quote: "“The team pushed back. I held the position.”",
-  // Plain screenshots (no baked frame) — the shared frame is drawn by
-  // DecisionAssetFrame. Same light/dark pair the vertical-scroll decisions use.
-  assetLight: "/images/fastrouter/fr-decision-01-verdict-first.png",
-  assetDark: "/images/fastrouter/fr-decision-01-verdict-first-dark.png",
-  assetAlt:
-    "FastRouter Model Council — Final Verdict card above Peer Rankings",
-};
+// Copy is verbatim from each decision's own Figma frame — which differs in
+// places from the vertical-scroll route's wording of the same decisions (e.g.
+// 02's "Chose" names the three stages here and doesn't there). The slide
+// frames are canonical for the slides; the two were not reconciled.
+export const COUNCIL_DECISIONS: readonly Decision[] = [
+  {
+    id: "council-decision-01",
+    number: "01",
+    chapter: "LLM COUNCIL",
+    headline: "Verdict-first layout",
+    chose: "Final verdict at the top. Arguments and peer review stacked below.",
+    gaveUp: "Chronological order — the narrative journey the team expected.",
+    why: "If users read arguments first they form an opinion before the verdict arrives. Showing the verdict cold preserves its objectivity as an independent signal.",
+    quote: "“The team pushed back. I held the position.”",
+    asset: {
+      kind: "image",
+      light: "/images/fastrouter/fr-decision-01-verdict-first.png",
+      dark: "/images/fastrouter/fr-decision-01-verdict-first-dark.png",
+      alt: "FastRouter Model Council — Final Verdict card above Peer Rankings",
+    },
+  },
+  {
+    id: "council-decision-02",
+    number: "02",
+    chapter: "LLM COUNCIL",
+    headline: "Progressive step visibility",
+    subtitle: "Arguments → Peer Review → Verdict",
+    chose:
+      "Each stage visible as it runs — Arguments → Peer Review → Final Verdict. Sticky status bar tracks the active stage.",
+    gaveUp: "Loading spinner → result. Less complexity, faster implementation.",
+    why: "Without visible stages the verdict is a black box. The three-stage visibility manages the wait and teaches users how Council works just by watching it run. Process visibility is proof of rigour.",
+    asset: {
+      kind: "video",
+      light: "/images/fastrouter/fr-decision-02-progressive-steps.mp4",
+      dark: "/images/fastrouter/fr-decision-02-progressive-steps-dark.mp4",
+      alt: "Council UI stepping through Stage 1 of 3 (Initial Discussions) while deliberation runs",
+    },
+  },
+  {
+    id: "council-decision-03",
+    number: "03",
+    chapter: "LLM COUNCIL",
+    headline: "Presets as onboarding strategy",
+    chose:
+      "A curated preset library is the first thing users see — predefined councils for specific use cases, ready to run.",
+    gaveUp: "Blank canvas with a Create Council button.",
+    why: "Council is a genuinely novel concept. A blank canvas fails when the concept itself is unfamiliar. Presets let users experience what Council does before they configure it. Post-launch: more presets were requested — the strategy worked.",
+    asset: {
+      kind: "image",
+      light: "/images/fastrouter/fr-decision-03-presets.png",
+      dark: "/images/fastrouter/fr-decision-03-presets-dark.png",
+      alt: "Multi-Model Council preset gallery — a grid of predefined council cards like Job Interview Preparation and College Admissions Strategy",
+    },
+  },
+  {
+    id: "council-decision-04",
+    number: "04",
+    chapter: "LLM COUNCIL",
+    headline: "Tabs over cards + persistent member strip",
+    chose:
+      "Each council member as a tab. Persistent strip shows all members, visible even when the config panel is collapsed.",
+    gaveUp:
+      "Card grid showing all models at once — mirrors the Playground layout.",
+    why: "Cards signal parallel comparison. In peer review you're reading each member's independent evaluation sequentially. Tabs signal that correctly. The strip removes mid-session anxiety about which models are active.",
+    asset: {
+      kind: "video",
+      light: "/images/fastrouter/fr-decision-04-persistent-strip.mp4",
+      dark: "/images/fastrouter/fr-decision-04-persistent-strip-dark.mp4",
+      alt: "Council UI with a persistent member-avatar strip visible above the Peer Rankings stage",
+    },
+  },
+];
 
-// The framed, theme-aware screenshot capsule. DecisionAssetFrame supplies the
-// gradient box + stroke ring + right fade; ThemeSwap picks the light/dark
-// screenshot (CSS-only, no flash). `object-top` so the crop keeps the header +
-// Final Verdict in view (same as FiveDecisions.tsx).
+// The framed, theme-aware asset capsule. DecisionAssetFrame supplies the
+// gradient box + stroke ring + right fade. `object-top` so the crop keeps the
+// header + Final Verdict in view (same as FiveDecisions.tsx).
 function DecisionCapsule({
-  light,
-  dark,
-  alt,
+  asset,
   className,
 }: {
-  light: string;
-  dark: string;
-  alt: string;
+  asset: DecisionAsset;
   className?: string;
 }) {
   return (
     <DecisionAssetFrame className={className}>
-      <ThemeSwap
-        light={
-          <Image
-            src={light}
-            alt={alt}
-            fill
-            className="object-cover object-top"
-            sizes="(max-width: 767px) 100vw, 720px"
-          />
-        }
-        dark={
-          <Image
-            src={dark}
-            alt={alt}
-            fill
-            className="object-cover object-top"
-            sizes="(max-width: 767px) 100vw, 720px"
-          />
-        }
-      />
+      {asset.kind === "video" ? (
+        <ThemeAwareVideo
+          className="block size-full object-cover object-top"
+          lightSrc={asset.light}
+          darkSrc={asset.dark}
+          aria-label={asset.alt}
+        />
+      ) : (
+        <ThemeSwap
+          light={
+            <Image
+              src={asset.light}
+              alt={asset.alt}
+              fill
+              className="object-cover object-top"
+              sizes="(max-width: 767px) 100vw, 720px"
+            />
+          }
+          dark={
+            <Image
+              src={asset.dark}
+              alt={asset.alt}
+              fill
+              className="object-cover object-top"
+              sizes="(max-width: 767px) 100vw, 720px"
+            />
+          }
+        />
+      )}
     </DecisionAssetFrame>
   );
 }
 
-// One "Chose / Gave up / Why?" block: a mono label over a body paragraph.
+// One "Chose / Gave up / Why" block: a mono label over a body paragraph.
 function Rationale({ label, children }: { label: string; children: string }) {
   return (
     <div className="flex flex-col gap-8px">
@@ -111,8 +203,21 @@ function Rationale({ label, children }: { label: string; children: string }) {
   );
 }
 
+// The 3px-accent-bordered line. Two slots use the identical treatment — the
+// subtitle under decision 02's headline and the pull-quote closing decision
+// 01 — so it's one component, placed differently.
+function AccentLine({ children }: { children: string }) {
+  return (
+    <div className="border-text-accent border-l-[3px] pl-20px">
+      <p className="font-ui font-semibold text-[17px] text-text-primary leading-[28px] tracking-[0.085px] md:text-[28px] md:leading-[40px] md:tracking-[-0.1px]">
+        {children}
+      </p>
+    </div>
+  );
+}
+
 export default function DecisionSlide({
-  decision = COUNCIL_VERDICT_FIRST,
+  decision = COUNCIL_DECISIONS[0],
 }: {
   decision?: Decision;
 }) {
@@ -124,16 +229,27 @@ export default function DecisionSlide({
       <GridDepthLayer className="absolute inset-x-0 top-32px h-[200px] w-full md:top-0 md:h-[800px]" />
 
       {/* Desktop centres the two-column row vertically; mobile is a normal
-          top-anchored stack. */}
+          top-anchored stack.
+
+          ONE capsule, reordered — not one per breakpoint. Mobile puts the
+          capsule between the headline and the rationale; desktop puts it in a
+          right-hand column. The obvious encoding (two DecisionCapsules, one
+          `md:hidden` and one `hidden md:block`) renders the asset TWICE in the
+          DOM, which for the two video decisions means two autoplaying decoders
+          each — and the pointer deck keeps all 12 slides mounted at once, so
+          nothing unmounts them offscreen. Instead the text column is
+          `display: contents` on mobile, flattening its children into this flex
+          column so `order` can interleave a single capsule between them; on
+          desktop it becomes a real column again and order goes back to source
+          order. Same technique the vertical-scroll route uses for the same
+          layout (FiveDecisions.tsx). */}
       <div className="relative z-10 w-full px-20px pt-32px md:flex md:h-full md:items-center md:px-80px md:pt-0">
-        <div className="w-full md:mx-auto md:flex md:max-w-[1280px] md:items-center md:gap-40px">
-          {/* Main column: text (+ the mobile capsule inline). 24px rhythm on
-              mobile, 56px on desktop — the inline mobile capsule drops out on
-              desktop (md:hidden), so the desktop gaps land between the three
-              text groups only. */}
-          <div className="flex w-full flex-col gap-24px md:w-[520px] md:shrink-0 md:gap-[56px]">
-            {/* Number + eyebrow + headline */}
-            <div className="flex flex-col gap-24px">
+        <div className="flex w-full flex-col gap-24px md:mx-auto md:max-w-[1280px] md:flex-row md:items-center md:gap-40px">
+          {/* Text column. 24px rhythm on mobile (inherited from the parent,
+              since this is `contents` there), 56px on desktop. */}
+          <div className="contents md:flex md:w-[520px] md:shrink-0 md:flex-col md:gap-[56px]">
+            {/* Number + eyebrow + headline (+ subtitle, decision 02 only) */}
+            <div className="order-1 flex flex-col gap-24px md:order-none">
               <div className="flex flex-col gap-4px">
                 {/* Ghost number, cropped to a 40px band (the "peeking numeral"
                     Figma frame). border-frame token → adapts to dark mode. */}
@@ -149,43 +265,51 @@ export default function DecisionSlide({
               <h1 className="font-display text-[32px] text-text-primary leading-[40px] tracking-[-0.32px] md:text-[56px] md:leading-[64px] md:tracking-[-0.56px]">
                 {decision.headline}
               </h1>
+              {decision.subtitle && (
+                <AccentLine>{decision.subtitle}</AccentLine>
+              )}
             </div>
 
-            {/* Mobile capsule — inline (hidden on desktop, which shows it as
-                the right column instead). */}
-            <DecisionCapsule
-              light={decision.assetLight}
-              dark={decision.assetDark}
-              alt={decision.assetAlt}
-              className="md:hidden"
-            />
-
-            {/* Chose / Gave up / Why? */}
-            <div className="flex flex-col gap-24px">
+            {/* Chose / Gave up / Why */}
+            <div className="order-3 flex flex-col gap-24px md:order-none">
               <Rationale label="Chose">{decision.chose}</Rationale>
               <Rationale label="Gave up">{decision.gaveUp}</Rationale>
-              <Rationale label="Why?">{decision.why}</Rationale>
+              <Rationale label="Why">{decision.why}</Rationale>
             </div>
 
-            {/* Pull-quote — 3px accent left border. */}
-            <blockquote className="border-text-accent border-l-[3px] pl-20px">
-              <p className="font-ui font-semibold text-[17px] text-text-primary leading-[28px] tracking-[0.085px] md:text-[28px] md:leading-[40px] md:tracking-[-0.1px]">
-                {decision.quote}
-              </p>
-            </blockquote>
+            {decision.quote && (
+              <div className="order-4 md:order-none">
+                <AccentLine>{decision.quote}</AccentLine>
+              </div>
+            )}
           </div>
 
-          {/* Desktop capsule — right column. */}
-          <div className="hidden md:block md:min-w-0 md:flex-1">
-            <DecisionCapsule
-              light={decision.assetLight}
-              dark={decision.assetDark}
-              alt={decision.assetAlt}
-              className="md:w-[720px]"
-            />
-          </div>
+          {/* The single capsule — between headline and rationale on mobile
+              (order-2), right column on desktop. 520 + 40 gap + 720 = the
+              1280px row; below that it bleeds off the right edge, as Figma
+              has it, clipped by the section's overflow-hidden. */}
+          <DecisionCapsule
+            asset={decision.asset}
+            className="order-2 md:order-none md:w-[720px] md:shrink-0"
+          />
         </div>
       </div>
     </section>
   );
+}
+
+// One bound slide per decision, so the deck registry in
+// fastrouter-slides/page.tsx stays a flat list of zero-prop components rather
+// than carrying decision data of its own.
+export function CouncilDecision01() {
+  return <DecisionSlide decision={COUNCIL_DECISIONS[0]} />;
+}
+export function CouncilDecision02() {
+  return <DecisionSlide decision={COUNCIL_DECISIONS[1]} />;
+}
+export function CouncilDecision03() {
+  return <DecisionSlide decision={COUNCIL_DECISIONS[2]} />;
+}
+export function CouncilDecision04() {
+  return <DecisionSlide decision={COUNCIL_DECISIONS[3]} />;
 }
