@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   useHeaderCaseStudyPill,
   type CaseStudyPill,
@@ -19,25 +20,28 @@ interface Chapter {
 // every other chapter is listed (so the rail always shows the full
 // 8-chapter shape) but marked not-yet-built below.
 //
-// Numbering/labels updated to the Figma "floating section pill" scheme
-// (nodes 7255:7281 / 7249:6818 / 7275:427): sequential from Hero=01, and
-// reworded labels. Confirmed in Figma only for the four sections that have a
-// mobile frame — Introduction(01)/The Problem(02)/The Product(03)/Feature
-// Overview(04). The rest (Council..Evaluations) are renumbered to stay
-// sequential but keep their existing labels — no invented reworded copy for
-// sections without a Figma frame (CLAUDE.md). Closing stays an unnumbered
-// bookend. Both the desktop rail's hover label and the mobile status pill
-// read straight from this one table now (they used to diverge — see the
-// pill notes below).
+// Numbering/labels come from the Figma "floating section pill" scheme
+// (nodes 7255:7281 / 7249:6818 / 7275:427): sequential from Hero=01, reworded
+// labels. The full nine-label list is now confirmed in one place — node
+// 7400:30219's expanded mobile panel spells out every section, so this table
+// no longer has to hold guessed copy for the sections that lacked a frame.
+// Two changes came from it, both confirmed directly: "Council" -> "LLM
+// Council", and the single bundled "Closing" chapter split into "Reflections"
+// and "Outcomes" (both unnumbered bookends, same as Hero). That takes the
+// desktop rail from 8 ticks to 9 — expected, and accepted rather than letting
+// the mobile panel keep its own divergent label set (the two label sets were
+// deliberately converged onto this table once already; splitting them again
+// would undo that).
 const CHAPTERS: Chapter[] = [
   { id: "hero", label: "Introduction", number: "01" },
   { id: "problem", label: "The Problem", number: "02" },
   { id: "product", label: "The Product", number: "03" },
   { id: "features", label: "Feature Overview", number: "04" },
-  { id: "council", label: "Council", number: "05" },
+  { id: "council", label: "LLM Council", number: "05" },
   { id: "observability", label: "Observability", number: "06" },
   { id: "evaluations", label: "Evaluations", number: "07" },
-  { id: "closing", label: "Closing", number: null },
+  { id: "reflections", label: "Reflections", number: null },
+  { id: "outcomes", label: "Outcomes", number: null },
 ];
 
 const BUILT_CHAPTER_IDS = new Set([
@@ -48,6 +52,50 @@ const BUILT_CHAPTER_IDS = new Set([
   "council",
   "observability",
 ]);
+
+// Both icons are inline SVGs rather than an icon-package import — this repo
+// has no icon dependency at all (see Header.tsx's note: @phosphor-icons/react
+// was wanted but is registry-blocked), so every icon in the portfolio shell is
+// hand-inlined. Paths lifted straight from the Figma nodes (7400:30215 map,
+// 7399:29688 close) with the baked #F9F9F7 fill swapped for currentColor so
+// they follow the pill's own adaptive text tone instead of pinning one scheme.
+function MapIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="size-24px" aria-hidden="true">
+      <path d="M21.4612 4.65844C21.3714 4.58843 21.2668 4.53981 21.1554 4.51626C21.0439 4.4927 20.9286 4.49484 20.8181 4.5225L15.0872 5.955L9.33563 3.07875C9.17537 2.99882 8.99181 2.97887 8.81812 3.0225L2.81812 4.5225C2.65587 4.56306 2.51183 4.65668 2.40889 4.7885C2.30595 4.92031 2.25003 5.08275 2.25 5.25V18.75C2.25002 18.864 2.27601 18.9764 2.32599 19.0788C2.37598 19.1813 2.44864 19.2709 2.53847 19.3411C2.62831 19.4112 2.73294 19.4599 2.84442 19.4836C2.95591 19.5072 3.07131 19.5051 3.18187 19.4775L8.91281 18.045L14.6644 20.9213C14.7688 20.9727 14.8836 20.9997 15 21C15.0613 21 15.1224 20.9924 15.1819 20.9775L21.1819 19.4775C21.3441 19.4369 21.4882 19.3433 21.5911 19.2115C21.694 19.0797 21.75 18.9172 21.75 18.75V5.25C21.75 5.13593 21.724 5.02336 21.674 4.92085C21.624 4.81834 21.5512 4.72859 21.4612 4.65844ZM9.75 4.96312L14.25 7.21312V19.0369L9.75 16.7869V4.96312ZM3.75 5.83594L8.25 4.71094V16.6641L3.75 17.7891V5.83594ZM20.25 18.1641L15.75 19.2891V7.33594L20.25 6.21094V18.1641Z" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="size-24px" aria-hidden="true">
+      <path d="M19.2806 18.2194C19.3503 18.2891 19.4056 18.3718 19.4433 18.4628C19.481 18.5539 19.5004 18.6515 19.5004 18.75C19.5004 18.8485 19.481 18.9461 19.4433 19.0372C19.4056 19.1282 19.3503 19.2109 19.2806 19.2806C19.2109 19.3503 19.1282 19.4056 19.0372 19.4433C18.9461 19.481 18.8485 19.5004 18.75 19.5004C18.6515 19.5004 18.5539 19.481 18.4628 19.4433C18.3718 19.4056 18.2891 19.3503 18.2194 19.2806L12 13.0603L5.78063 19.2806C5.63989 19.4214 5.44902 19.5004 5.25 19.5004C5.05098 19.5004 4.86011 19.4214 4.71938 19.2806C4.57864 19.1399 4.49958 18.949 4.49958 18.75C4.49958 18.551 4.57864 18.3601 4.71938 18.2194L10.9397 12L4.71938 5.78063C4.57864 5.63989 4.49958 5.44902 4.49958 5.25C4.49958 5.05098 4.57864 4.86011 4.71938 4.71938C4.86011 4.57864 5.05098 4.49958 5.25 4.49958C5.44902 4.49958 5.63989 4.57864 5.78063 4.71938L12 10.9397L18.2194 4.71938C18.3601 4.57864 18.551 4.49958 18.75 4.49958C18.949 4.49958 19.1399 4.57864 19.2806 4.71938C19.4214 4.86011 19.5004 5.05098 19.5004 5.25C19.5004 5.44902 19.4214 5.63989 19.2806 5.78063L13.0603 12L19.2806 18.2194Z" />
+    </svg>
+  );
+}
+
+// Every string the collapsed/expanded pill can ever show. Rendered all at once
+// as invisible sizers inside the pill's label slot (see the pill markup), which
+// is what gives the pill ONE intrinsic width: the longest label wins, and the
+// pill can't resize as the reader scrolls between sections or opens the panel.
+// Derived from CHAPTERS rather than hardcoded, so another case study with
+// longer labels gets a correspondingly wider pill for free — Figma's 186px is
+// FastRouter's measurement, not a universal constant (see the pill notes).
+const PILL_LABEL_SLOTS = [...CHAPTERS.map((c) => c.label), "Close"];
+
+// Panel rows fade/rise in sequence rather than all at once, so the list reads
+// as unrolling out from behind the pill rather than appearing whole. Exit
+// staggers bottom-to-top (staggerDirection: -1) so it retracts the way it came
+// — the same in/out asymmetry SectionRail.tsx uses for the desktop rail.
+const PANEL_LIST_VARIANTS = {
+  closed: { transition: { staggerChildren: 0.02, staggerDirection: -1 } },
+  open: { transition: { staggerChildren: 0.03, delayChildren: 0.05 } },
+};
+const PANEL_ROW_VARIANTS = {
+  closed: { opacity: 0, y: 6 },
+  open: { opacity: 1, y: 0 },
+};
 
 // Rail color adapts to whatever's behind it — confirmed directly against
 // zainabkabira.com's own pager, which sets `.on-dark`/default (light) via
@@ -68,6 +116,10 @@ const RAIL_COLORS: Record<
     halo: string;
     pillBg: string;
     pillText: string;
+    /** Inactive-but-reachable panel row. */
+    pillTextMuted: string;
+    /** Panel row for a chapter that has no slides yet. */
+    pillTextDisabled: string;
     pillDivider: string;
   }
 > = {
@@ -77,6 +129,8 @@ const RAIL_COLORS: Record<
     halo: "shadow-[0_0_7px_rgba(0,0,0,0.4)]",
     pillBg: "bg-white",
     pillText: "text-[#0D0D0D]",
+    pillTextMuted: "text-[#0D0D0D]/60",
+    pillTextDisabled: "text-[#0D0D0D]/30",
     pillDivider: "bg-[#0D0D0D]/30",
   },
   "on-light": {
@@ -85,6 +139,8 @@ const RAIL_COLORS: Record<
     halo: "shadow-[0_0_10px_rgba(255,255,255,0.8)]",
     pillBg: "bg-[#0D0D0D]",
     pillText: "text-white",
+    pillTextMuted: "text-white/60",
+    pillTextDisabled: "text-white/30",
     pillDivider: "bg-white/30",
   },
 };
@@ -200,15 +256,31 @@ export default function SegmentedRail({
 }: SegmentedRailProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [pillOffset, setPillOffset] = useState(0);
+  const [panelOpen, setPanelOpen] = useState(false);
+  // A 2-in-1 switching from touch to a mouse flips `variant` to "rail"
+  // mid-session, which would strand an open panel as invisible state behind a
+  // rail that has no way to close it. Reset during render (React's documented
+  // "adjust state when a prop changes" pattern) rather than in an effect, so
+  // there's no extra pass where the stale value is still live.
+  const [renderedVariant, setRenderedVariant] = useState(variant);
+  if (renderedVariant !== variant) {
+    setRenderedVariant(variant);
+    setPanelOpen(false);
+  }
   const { setCaseStudyPill } = useHeaderCaseStudyPill();
   const colors = RAIL_COLORS[theme];
+  const panelId = useId();
+  const pillButtonRef = useRef<HTMLButtonElement>(null);
+  const reduceMotion = useReducedMotion();
 
   const activeIndex = CHAPTERS.findIndex((c) => c.id === activeId);
   const activeChapter = CHAPTERS[activeIndex];
   // Mobile status pill reads the same CHAPTERS copy as the desktop rail now
   // that the two label sets have converged (Figma reworded them to match).
-  const activeNumber = activeChapter.number;
   const activeLabel = activeChapter.label;
+  // The one string the collapsed/expanded pill shows. All of PILL_LABEL_SLOTS
+  // is rendered invisibly alongside it to hold the width steady.
+  const pillLabel = panelOpen ? "Close" : activeLabel;
 
   // Chapter index is plain React state, not scroll position — no GSAP
   // needed here (unlike useCaseStudyIntroPill.ts, which does the same job
@@ -218,6 +290,18 @@ export default function SegmentedRail({
     return () => setCaseStudyPill(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId]);
+
+  // Escape closes the panel and hands focus back to the pill that opened it.
+  useEffect(() => {
+    if (!panelOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setPanelOpen(false);
+      pillButtonRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [panelOpen]);
 
   const hovered = hoveredIndex !== null ? CHAPTERS[hoveredIndex] : null;
 
@@ -293,12 +377,18 @@ export default function SegmentedRail({
     </nav>
     )}
 
-      {/* Touch — node 7255:7281 replaces the whole rail with this single
-          passive status pill (confirmed: not tappable, no click handler).
+      {/* Touch — nodes 7400:30189 (collapsed) and 7399:29687 + 7399:29715
+          (expanded) replace the whole rail with a bottom pill that is now a
+          real disclosure control, not the passive status readout it started
+          as. Node 7400:30219 is the frame holding both states.
+
           Shown for touch devices at any width (not just <768px): a landscape
           phone or tablet is wide but still wants this, not the hover rail —
           the page gates it via the `variant` prop rather than a CSS width
-          class.
+          class. This is the ONLY way to jump between sections on touch: the
+          mobile stack is one long scroll with no rail over it, so before this
+          the reader had no navigation at all, only a label telling them where
+          they were.
 
           Colors come from RAIL_COLORS[theme] — the SAME source the desktop
           rail uses — not from global `dark:` overrides. The pill is an INVERSE
@@ -308,29 +398,219 @@ export default function SegmentedRail({
           derives that from the active slide including the chapter-intro INVERT
           case, so this now flips correctly over an inverted slide too — the old
           `dark:` logic keyed off the global theme and so stayed dark over a
-          dark inverted slide (the reported bug). on-light gives the dark pill
-          (Figma node 7275:427 / 7284:837); on-dark the light pill. The number
-          uses the pill's own text tone at 60% (same as the desktop hover
-          pill), the divider its pillDivider tone. */}
+          dark inverted slide (the reported bug). The panel takes the same pair,
+          so pill and panel always flip together; Figma only drew the dark
+          variant of the panel, which would have stranded a black panel under a
+          white pill on light slides.
+
+          Four deliberate deviations from the Figma frame, all confirmed:
+          - Width is derived, not the frame's fixed 186px. 186 is FastRouter's
+            own longest-label measurement and predates the 24px map icon plus
+            the 24px centring spacer, which together eat 64px of it — "Feature
+            Overview" would clip. PILL_LABEL_SLOTS renders every possible label
+            invisibly inside the label slot instead, so the pill's intrinsic
+            width is longest-label-plus-chrome, holds steady as the label
+            changes, and is automatically right for a case study with different
+            labels rather than needing a new magic number per study.
+          - The panel marks the current section (full text tone vs. muted). The
+            frame draws all nine rows identically.
+          - Chapters with no slides yet render at the disabled tone and are
+            genuinely disabled, matching the desktop rail's existing "show the
+            full shape, disable what isn't built" rule. The frame shows them as
+            ordinary rows.
+          - The collapsed pill drops the chapter number and its divider — that
+            IS the frame, noted here only because the desktop hover pill keeps
+            both, so the two intentionally differ now.
+
+          Motion, not GSAP: this is a state-driven open/close, which CLAUDE.md
+          puts squarely in Motion's lane (and this route runs no GSAP at all).
+          Same easing/AnimatePresence shape as Header.tsx's mobile menu. The
+          panel animates height 0 -> auto behind `overflow-hidden`, which is
+          what reads as unrolling out from behind the pill rather than fading
+          in place; padding lives on an inner element so height 0 is really 0
+          and not 24px of leftover padding. */}
       {variant === "pill" && (
-      <div className={`fixed bottom-48px left-1/2 z-20 flex w-[200px] -translate-x-1/2 items-center gap-8px rounded-[24px] px-16px py-12px shadow-[0px_6px_20px_0px_rgba(0,0,0,0.2)] transition-colors duration-300 ${colors.pillBg}`}>
-        {activeNumber && (
-          <>
-            <span className={`shrink-0 font-mono font-medium text-[13px] uppercase tracking-[0.78px] opacity-60 ${colors.pillText}`}>
-              {activeNumber}
-            </span>
-            <span className={`h-[14px] w-px shrink-0 ${colors.pillDivider}`} />
-          </>
-        )}
-        {/* flex-1 + text-center: the number/divider sit left, the label
-            fills and centers in the remaining width. This is what makes the
-            fixed 200px pill (Figma node 7275:427) hold its width steady as
-            the label text changes between sections instead of the pill
-            resizing per label — the point of pinning the width. */}
-        <span className={`flex-1 text-center font-ui font-medium text-[14px] leading-[20px] tracking-[0.07px] ${colors.pillText}`}>
-          {activeLabel}
-        </span>
-      </div>
+        <>
+          {/* Transparent, not a scrim — the frame shows the page still fully
+              visible behind the open panel. It exists to catch the
+              tap-outside-to-close and, via touch-action, to stop the page
+              scrolling underneath an open panel without resorting to a
+              body-scroll lock (which iOS handles badly). */}
+          <AnimatePresence>
+            {panelOpen && (
+              <motion.div
+                key="backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setPanelOpen(false)}
+                aria-hidden="true"
+                className="fixed inset-0 z-10"
+                style={{ touchAction: "none" }}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* w-max + items-stretch is the shared-width mechanism: the wrapper
+              hugs its widest child (the pill), and the panel takes that width
+              back via w-full, so the two surfaces can never disagree. */}
+          <div className="fixed bottom-48px left-1/2 z-20 flex w-max -translate-x-1/2 flex-col items-stretch">
+            <AnimatePresence initial={false}>
+              {panelOpen && (
+                <motion.nav
+                  key="panel"
+                  id={panelId}
+                  aria-label="Case study sections"
+                  initial={
+                    reduceMotion
+                      ? { opacity: 0 }
+                      : { height: 0, opacity: 0, y: 8 }
+                  }
+                  animate={
+                    reduceMotion
+                      ? { opacity: 1 }
+                      : { height: "auto", opacity: 1, y: 0 }
+                  }
+                  exit={
+                    reduceMotion
+                      ? { opacity: 0 }
+                      : { height: 0, opacity: 0, y: 8 }
+                  }
+                  transition={{
+                    duration: reduceMotion ? 0.12 : 0.28,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  style={{ transformOrigin: "bottom" }}
+                  className={`mb-4px w-full overflow-hidden rounded-[24px] shadow-[0px_6px_20px_0px_rgba(0,0,0,0.2)] ${colors.pillBg}`}
+                >
+                  <motion.div
+                    variants={reduceMotion ? undefined : PANEL_LIST_VARIANTS}
+                    initial="closed"
+                    animate="open"
+                    exit="closed"
+                    className="flex flex-col py-12px"
+                  >
+                    {CHAPTERS.map((chapter) => {
+                      const isBuilt = BUILT_CHAPTER_IDS.has(chapter.id);
+                      const isActive = chapter.id === activeId;
+                      return (
+                        <motion.button
+                          key={chapter.id}
+                          type="button"
+                          variants={
+                            reduceMotion ? undefined : PANEL_ROW_VARIANTS
+                          }
+                          disabled={!isBuilt}
+                          aria-current={isActive ? "true" : undefined}
+                          onClick={() => {
+                            setPanelOpen(false);
+                            onNavigate(chapter.id);
+                          }}
+                          className={`whitespace-nowrap px-16px py-8px text-left font-ui font-medium text-[14px] leading-[20px] tracking-[0.07px] ${
+                            !isBuilt
+                              ? `cursor-default ${colors.pillTextDisabled}`
+                              : isActive
+                                ? colors.pillText
+                                : colors.pillTextMuted
+                          }`}
+                        >
+                          {chapter.label}
+                        </motion.button>
+                      );
+                    })}
+                  </motion.div>
+                </motion.nav>
+              )}
+            </AnimatePresence>
+
+            <button
+              ref={pillButtonRef}
+              type="button"
+              onClick={() => setPanelOpen((open) => !open)}
+              aria-expanded={panelOpen}
+              aria-controls={panelId}
+              aria-label={
+                panelOpen
+                  ? "Close section navigation"
+                  : "Open section navigation"
+              }
+              className={`flex w-full items-center gap-8px rounded-[24px] px-16px py-12px shadow-[0px_6px_20px_0px_rgba(0,0,0,0.2)] transition-colors duration-300 ${colors.pillBg}`}
+            >
+              <span
+                className={`relative grid size-24px shrink-0 place-items-center ${colors.pillText}`}
+              >
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.span
+                    key={panelOpen ? "close" : "map"}
+                    initial={
+                      reduceMotion
+                        ? { opacity: 0 }
+                        : { opacity: 0, rotate: -90, scale: 0.6 }
+                    }
+                    animate={
+                      reduceMotion
+                        ? { opacity: 1 }
+                        : { opacity: 1, rotate: 0, scale: 1 }
+                    }
+                    exit={
+                      reduceMotion
+                        ? { opacity: 0 }
+                        : { opacity: 0, rotate: 90, scale: 0.6 }
+                    }
+                    transition={{
+                      duration: reduceMotion ? 0.1 : 0.22,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                    className="col-start-1 row-start-1 flex"
+                  >
+                    {panelOpen ? <CloseIcon /> : <MapIcon />}
+                  </motion.span>
+                </AnimatePresence>
+              </span>
+
+              {/* Invisible sizers first (they establish the width), the live
+                  label stacked on top of them in the same grid cell. */}
+              <span className="relative grid flex-1 place-items-center">
+                {PILL_LABEL_SLOTS.map((label) => (
+                  <span
+                    key={label}
+                    aria-hidden="true"
+                    className="invisible col-start-1 row-start-1 whitespace-nowrap font-ui font-medium text-[14px] leading-[20px] tracking-[0.07px]"
+                  >
+                    {label}
+                  </span>
+                ))}
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.span
+                    key={pillLabel}
+                    initial={
+                      reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }
+                    }
+                    animate={
+                      reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }
+                    }
+                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                    transition={{
+                      duration: reduceMotion ? 0.1 : 0.2,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                    className={`col-start-1 row-start-1 whitespace-nowrap font-ui font-medium text-[14px] leading-[20px] tracking-[0.07px] ${colors.pillText}`}
+                  >
+                    {pillLabel}
+                  </motion.span>
+                </AnimatePresence>
+              </span>
+
+              {/* Figma's own centring trick (node 7400:30194 — a second icon
+                  at opacity 0): a 24px box balancing the real icon on the left
+                  so the label reads optically centred in the pill rather than
+                  centred in the space left over beside the icon. Rendered as
+                  an empty box rather than a duplicated icon; same result. */}
+              <span aria-hidden="true" className="size-24px shrink-0" />
+            </button>
+          </div>
+        </>
       )}
     </>
   );

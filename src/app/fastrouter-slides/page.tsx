@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import FastRouterLogomark from "@/components/fastrouter/FastRouterLogomark";
 import SegmentedRail from "@/components/fastrouter-slides/SegmentedRail";
 import HeroSlide from "@/components/fastrouter-slides/HeroSlide";
@@ -121,6 +123,18 @@ const SLIDE_RAIL_MODE: readonly SlideRailMode[] = [
 // deck's stage height from it.
 const HEADER_HEIGHT_FALLBACK_PX = 64;
 
+// ScrollToPlugin drives the mobile section panel's jump-to-section (see
+// navigateToChapter), rather than the native `window.scrollTo({behavior:
+// "smooth"})` the pointer deck uses, for two reasons the pointer deck doesn't
+// have: the jump can cross the entire page (Introduction to Observability is a
+// dozen slides), so a controlled 0.8s duration beats the browser's own
+// unspecified one; and the scroll-spy has to stay frozen for exactly as long
+// as the scroll lasts, which needs a real completion callback — `scrollend` is
+// a guess with a timeout behind it, `onComplete`/`onInterrupt` are not. Same
+// plugin, same job, same 0.8s/power2.inOut as the desktop SectionRail's own
+// click-to-jump, so both rails jump with one feel.
+gsap.registerPlugin(ScrollToPlugin);
+
 // Parallel, full-page slide rebuild of the FastRouter case study (Figma
 // section "portfolio case study interactive horizontal sliding approach",
 // node 7213:122638), tested alongside the live vertical-scroll /fastrouter.
@@ -161,6 +175,13 @@ export default function FastRouterSlidesPage() {
   // IntersectionObserver — index-aligned with SLIDE_IDS. Unused in the pointer
   // branch (that stack isn't rendered there).
   const mobileSlideRefs = useRef<(HTMLElement | null)[]>([]);
+  // True while a tap on the mobile section panel is scrolling the page. The
+  // scroll-spy below ignores everything during that window: a jump from
+  // Introduction to Observability crosses a dozen slides, and letting the
+  // observer report each one in turn flickers the pill's label AND its
+  // adaptive colour the whole way down. Cleared by the scroll tween itself
+  // (see navigateToChapter), so it can't be left stuck on.
+  const programmaticScroll = useRef(false);
   const { isDark } = useTheme();
   const { setInvertSurface } = useHeaderInvertSurface();
 
@@ -232,14 +253,52 @@ export default function FastRouterSlidesPage() {
   // that chapter's FIRST slide. Chapters and slides stopped being 1:1 once
   // Council grew to eight slides, so the rail can no longer hand over an
   // index — see the onNavigate note in SegmentedRail.tsx.
+  //
+  // Touch needs a different mechanism entirely, not just a different target:
+  // `navigateTo` scrolls the pointer deck's own scroll container, which doesn't
+  // exist on the touch branch (scrollRef is null there), so this used to be a
+  // silent no-op on mobile — the section panel had nothing to call. On touch
+  // the slides are ordinary document flow, so scroll the WINDOW to the slide
+  // wrapper's own offset instead, less the header height so the section
+  // doesn't land underneath it. Uses mobileSlideRefs (already index-aligned
+  // and already populated for the scroll-spy) rather than looking up a DOM id
+  // — the wrappers carry no id, and the slides' own ids belong to the slide
+  // components, not these wrappers.
   const navigateToChapter = useCallback(
     (chapterId: string) => {
       const first = SLIDE_CHAPTER_IDS.indexOf(
         chapterId as (typeof SLIDE_CHAPTER_IDS)[number]
       );
-      if (first !== -1) navigateTo(first);
+      if (first === -1) return;
+
+      if (!isTouch) {
+        navigateTo(first);
+        return;
+      }
+
+      const el = mobileSlideRefs.current[first];
+      if (!el) return;
+
+      // Set the destination's chapter immediately and freeze the spy for the
+      // duration of the tween, so the pill reads the section you asked for the
+      // whole way there instead of ticking through every slide in between.
+      // autoKill hands control straight back if the reader scrolls mid-flight;
+      // onInterrupt is what releases the spy in that case (onComplete never
+      // fires for a killed tween).
+      programmaticScroll.current = true;
+      setActiveIndex(first);
+      const release = () => {
+        programmaticScroll.current = false;
+      };
+      gsap.to(window, {
+        duration: 0.8,
+        ease: "power2.inOut",
+        scrollTo: { y: el, offsetY: headerHeight, autoKill: true },
+        onComplete: release,
+        onInterrupt: release,
+      });
     },
-    [navigateTo]
+    [navigateTo, isTouch, headerHeight]
   );
 
   // Pointer deck driver: map the scroll container's vertical scroll position
@@ -310,6 +369,7 @@ export default function FastRouterSlidesPage() {
 
     const observer = new IntersectionObserver(
       (entries) => {
+        if (programmaticScroll.current) return;
         const visible = entries.filter((e) => e.isIntersecting);
         if (visible.length === 0) return;
         const front = visible.reduce((a, b) =>
