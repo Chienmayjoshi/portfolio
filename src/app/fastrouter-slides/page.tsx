@@ -10,6 +10,7 @@ import FeaturesSlide from "@/components/fastrouter-slides/FeaturesSlide";
 import CouncilIntroSlide from "@/components/fastrouter-slides/CouncilIntroSlide";
 import BriefSlide from "@/components/fastrouter-slides/BriefSlide";
 import ConceptualGroundingSlide from "@/components/fastrouter-slides/ConceptualGroundingSlide";
+import ReframeSlide from "@/components/fastrouter-slides/ReframeSlide";
 import DecisionSlide from "@/components/fastrouter-slides/DecisionSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { useHeaderInvertSurface } from "@/components/shared/HeaderProvider";
@@ -29,6 +30,7 @@ const SLIDE_IDS = [
   "council-intro",
   "council-brief",
   "council-grounding",
+  "council-reframe",
   "council",
 ] as const;
 // Parallel array of slide bodies, index-aligned with SLIDE_IDS — lets both
@@ -42,6 +44,7 @@ const SLIDE_COMPONENTS = [
   CouncilIntroSlide,
   BriefSlide,
   ConceptualGroundingSlide,
+  ReframeSlide,
   DecisionSlide,
 ] as const;
 // Parallel array: which SegmentedRail chapter tick each slide lights up.
@@ -55,6 +58,7 @@ const SLIDE_CHAPTER_IDS = [
   "problem",
   "product",
   "features",
+  "council",
   "council",
   "council",
   "council",
@@ -79,6 +83,7 @@ const SLIDE_RAIL_MODE: readonly SlideRailMode[] = [
   "follow",
   "follow",
   "invert",
+  "follow",
   "follow",
   "follow",
   "follow",
