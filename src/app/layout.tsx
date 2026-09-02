@@ -9,7 +9,7 @@
 // file from fonts.google.com/specimen/Google+Sans+Flex and load it with
 // next/font/local instead — same output CSS variable, just self-hosted
 // manually rather than pulled from Google's catalog automatically.
-import { Google_Sans_Flex } from "next/font/google";
+import { Google_Sans_Flex, Source_Sans_3 } from "next/font/google";
 import localFont from "next/font/local";
 
 // Display font swapped 2026-07-14: Fraunces -> Season Mix, per direct
@@ -36,6 +36,17 @@ const googleSansFlex = Google_Sans_Flex({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-google-sans-flex",
+  display: "swap",
+});
+
+// Source Sans 3 — a deliberate THIRD font, scoped to the reconstructed
+// Twitter/X card on the Conceptual Grounding slide (font-tweet in globals.css).
+// Approved as a one-off exception to the two-font rule (CLAUDE.md) so the
+// embedded tweet reads as Twitter's own type rather than the portfolio's.
+const sourceSans3 = Source_Sans_3({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-source-sans-3",
   display: "swap",
 });
 
@@ -83,7 +94,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${seasonMix.variable} ${googleSansFlex.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${seasonMix.variable} ${googleSansFlex.variable} ${sourceSans3.variable} h-full antialiased`}
       // The theme-init script below intentionally adds `dark` to this
       // element before React hydrates (that's the whole point — it avoids
       // a flash of the wrong theme). That makes the live DOM className

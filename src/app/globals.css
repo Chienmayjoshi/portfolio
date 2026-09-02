@@ -27,6 +27,10 @@
      layout.tsx from create-next-app scaffolding; this line is what
      actually turns it into a usable `font-mono` Tailwind utility. */
   --font-mono: var(--font-geist-mono);
+  /* Source Sans 3 — `font-tweet`, scoped to the reconstructed X/Twitter card
+     on the Conceptual Grounding slide only (approved third-font exception to
+     the two-font rule, see layout.tsx). Not for portfolio UI type. */
+  --font-tweet: var(--font-source-sans-3);
 
   /* ------------------------------------------------------------------
      COLOR — light mode values (dark mode override is further down).
