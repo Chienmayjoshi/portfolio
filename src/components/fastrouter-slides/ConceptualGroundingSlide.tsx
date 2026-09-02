@@ -111,27 +111,33 @@ function TweetCard({ compact = false }: { compact?: boolean }) {
   const nameSize = compact ? "text-[16px]" : "text-[18px]";
   const bodySize = compact ? "text-[14px]" : "text-[18px]";
   const metaSize = compact ? "text-[14px]" : "text-[16px]";
+  // Desktop bottom fade. Figma (node 7183:97478) dissolves the WHOLE card at
+  // the bottom — border, surface and the engagement row all go with it — the
+  // same treatment the Product recording gets. This was previously an overlay
+  // div filled with a gradient to the card's own background, which is
+  // invisible by construction: white fading into white on a card whose content
+  // ends inside it. A mask on the card root is what actually reproduces it,
+  // and it's this codebase's established mechanic for a faded edge
+  // (ScreenshotFrame's `black 82%, transparent 100%`). The ramp here is deeper
+  // and finishes EARLY (72% -> 97%, not 100%): ScreenshotFrame fades a
+  // screenshot that sits inside a bezel, so a soft tail is fine, but here the
+  // thing being faded is the card's own border and rounded bottom corner —
+  // reaching zero only at the very last pixel row left that edge faintly
+  // drawn, which reads as a clipped card rather than a dissolving one. The
+  // mobile card is clipped to a fixed height instead and gets its own
+  // fade-to-page-bg from the caller, so it stays unmasked.
+  const fadeMask = "linear-gradient(to bottom, black 72%, transparent 97%)";
   return (
     <div
       className={`relative flex w-full gap-8px overflow-hidden rounded-[16px] border border-[#d9d9d9] bg-white font-tweet dark:border-[#38444d] dark:bg-[#15202b] ${
         compact ? "h-[300px] p-12px" : "rounded-[24px] p-24px"
       }`}
+      style={
+        compact
+          ? undefined
+          : { maskImage: fadeMask, WebkitMaskImage: fadeMask }
+      }
     >
-      {/* Subtle bottom fade to the card bg (matches Figma's faded tail). Inline
-          linear-gradient (this codebase's gradient convention — Tailwind v4's
-          bg-gradient-* classes aren't used here); --tweet-fade carries the
-          card bg per theme so the fade dissolves into white / #15202b. The
-          mobile card gets its own fade-to-page-bg from the caller instead. */}
-      {!compact && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[72px] [--tweet-fade:#ffffff] dark:[--tweet-fade:#15202b]"
-          style={{
-            background:
-              "linear-gradient(to top, var(--tweet-fade), transparent)",
-          }}
-        />
-      )}
       <div className={`flex min-w-0 flex-1 items-start ${compact ? "gap-12px" : "gap-16px"}`}>
         {/* Avatar */}
         <div

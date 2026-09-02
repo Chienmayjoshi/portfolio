@@ -89,8 +89,28 @@ export default function HeroSlide() {
           "content" frame shows zero explicit gap there; the meta grid's
           y-position lands exactly where the text block's own bottom edge
           ends, confirmed by direct math on the metadata, not assumed).
-          md: values unchanged, still desktop's original spec. */}
-      <div className="relative z-10 mx-auto flex w-full max-w-[1440px] shrink-0 flex-col items-start justify-between gap-0 px-20px pt-40px pb-40px md:flex-row md:gap-40px md:px-80px md:pt-64px">
+          md: values unchanged, still desktop's original spec.
+
+          DESKTOP TOP PADDING is measured FROM THE HEADER, not from the
+          viewport top. The deck pulls every slide up behind the transparent
+          Header (page.tsx's marginTop: -headerHeight), so the old flat
+          pt-64px put this content 64px from the VIEWPORT top — i.e. under a
+          ~74px header, which is what made it read as crowded. Figma's own
+          frame (node 7032:61508) puts the header row at y24 h54 (bottom 78)
+          and the content block at y130: a 52px gap BELOW the header. Rebuilt
+          as var(--fr-header-h) + 48px so the relationship holds whatever the
+          real header measures — 52 rounded to the 48px scale token, same
+          nearest-token treatment CLAUDE.md documents for other off-grid Figma
+          values. Product does the same thing with its own (zero) offset.
+
+          DESKTOP BOTTOM PADDING is 0, not 40. Figma's content block ends at
+          y548 and the illustration frame starts at y548 — no gap at all; the
+          40px below the description is the description block's OWN py-40px
+          bottom (node 7032:61533: 40 pad + 56 text + 40 pad = 136). The extra
+          wrapper pb-40px was doubling that to 80px. Mobile keeps pb-40px (the
+          touch stack isn't pulled up behind the header, so its own frame's
+          spacing still applies). */}
+      <div className="relative z-10 mx-auto flex w-full max-w-[1440px] shrink-0 flex-col items-start justify-between gap-0 px-20px pt-40px pb-40px md:flex-row md:gap-40px md:px-80px md:pt-[calc(var(--fr-header-h,0px)+48px)] md:pb-0">
         {/* gap-24 (was gap-40): real mobile value, node 7255:7285. */}
         <div className="flex w-full max-w-[760px] flex-col items-start gap-24px md:gap-40px">
           <div className="flex flex-wrap items-center gap-12px">
