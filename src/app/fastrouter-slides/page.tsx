@@ -135,6 +135,28 @@ const SLIDE_RAIL_MODE: readonly SlideRailMode[] = [
 // deck's stage height from it.
 const HEADER_HEIGHT_FALLBACK_PX = 64;
 
+// Masked edge fade — the soft dissolve at the left/right viewport edges while a
+// slide transition is in flight. Reproduces the effect of Motion's "page mask
+// transitions" example; the example's own AnimateView API needs react@canary
+// and the paid motion-plus package, so this is built from the deck's existing
+// scroll math instead and adds no dependency.
+//
+// Feather width is a PERCENTAGE of the mask box, which is exactly one viewport
+// wide, so it scales with the screen and needs no measurement. 4.5% is ~65px at
+// 1440 — soft enough to read as an edge dissolving, well short of the two
+// slides reading as a crossfade (which the brief explicitly rules out).
+const MASK_MAX_EDGE_PCT = 4.5;
+// Below this the feather is ~1px and invisible, so the mask is removed outright
+// rather than left applied at a hairline width — see the sync() mask block.
+const MASK_MIN_EDGE_PCT = 0.1;
+// 0.05% steps (~0.7px at 1440). Scroll events fire densely during a snap
+// settle, often with no meaningful positional change; quantizing lets those
+// frames skip the write entirely while still leaving ~90 steps across the ramp,
+// far more than the eye resolves on a 65px feather.
+const MASK_QUANTIZE = 20;
+const MASK_GRADIENT =
+  "linear-gradient(to right, transparent 0, black var(--fr-mask-edge, 0%), black calc(100% - var(--fr-mask-edge, 0%)), transparent 100%)";
+
 // ScrollToPlugin drives the mobile section panel's jump-to-section (see
 // navigateToChapter), rather than the native `window.scrollTo({behavior:
 // "smooth"})` the pointer deck uses, for two reasons the pointer deck doesn't
@@ -197,6 +219,16 @@ export default function FastRouterSlidesPage() {
   // The in-flight jump tween, so a second tap (or unmount) can kill it rather
   // than leaving two tweens fighting over one scroll position.
   const scrollTween = useRef<gsap.core.Tween | null>(null);
+  // Masked edge fade: the wrapper that carries the mask (static, viewport-sized)
+  // and the colour-only mirror row behind it. See the JSX and the sync() mask
+  // block for why they are two separate elements.
+  const maskRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  // Last written feather width, and whether the gradient is currently applied —
+  // both guards live in refs so the scroll driver never re-renders.
+  const maskEdgeRef = useRef(-1);
+  const maskOnRef = useRef(false);
+  const reduceMotionRef = useRef(false);
   const { isDark } = useTheme();
   const { setInvertSurface } = useHeaderInvertSurface();
 
@@ -370,13 +402,94 @@ export default function FastRouterSlidesPage() {
       if (!row) return;
       const max = sc.scrollHeight - sc.clientHeight;
       const progress = max > 0 ? sc.scrollTop / max : 0;
-      row.style.transform = `translate3d(${
-        -progress * (slides - 1) * sc.clientWidth
-      }px, 0, 0)`;
-      const index = Math.round(progress * (slides - 1));
+      const pos = progress * (slides - 1);
+      // One transform string for both layers: the slides and the colour mirror
+      // behind them must stay in exact register, so they are never computed
+      // separately.
+      const transform = `translate3d(${-pos * sc.clientWidth}px, 0, 0)`;
+      row.style.transform = transform;
+      if (backdropRef.current) {
+        backdropRef.current.style.transform = transform;
+      }
+      const index = Math.round(pos);
       if (index !== activeIndexRef.current) setActiveIndex(index);
+
+      // --- masked edge fade ---------------------------------------------
+      // `t` is the transition's OWN progress: 0 at every settled slide, 1 at
+      // the exact midpoint between two. Derived from the same `index` the rail
+      // uses rather than a second Math.round, so the feather is guaranteed to
+      // peak on the very frame activeIndex flips — the two cannot drift.
+      //
+      // Smoothstep, not the house cubic-bezier(0.22, 1, 0.36, 1): that curve is
+      // an ease-OUT for a state change with a start and an end, and this value
+      // is scrubbed and symmetric, so it wants a symmetric ease-in-out. The
+      // practical effect is that 10% into a transition the feather is still
+      // ~2px — the dissolve only becomes perceptible past about a quarter of
+      // the travel, which is what keeps it subtle rather than always-on.
+      const maskEl = maskRef.current;
+      if (!maskEl) return;
+      const t = reduceMotionRef.current ? 0 : Math.abs(pos - index) * 2;
+      const eased = t * t * (3 - 2 * t);
+      const raw = eased * MASK_MAX_EDGE_PCT;
+      const edge =
+        raw < MASK_MIN_EDGE_PCT
+          ? 0
+          : Math.round(raw * MASK_QUANTIZE) / MASK_QUANTIZE;
+      if (edge === maskEdgeRef.current) return;
+      maskEdgeRef.current = edge;
+
+      // Removed outright at rest, not left applied at zero width. The deck sits
+      // settled the overwhelming majority of the time (scroll-snap), and with
+      // no mask there is no render surface and no compositing penalty at all —
+      // which also means every settled slide paints exactly as it does today.
+      //
+      // This also bounds a compositing risk worth knowing about. A masked
+      // ancestor forces its subtree onto a render surface, and two descendants
+      // are already promoted, continuously-animating layers: Hero's
+      // .hero-zoom-loop (globals.css) and ProductSlide's <video>. Putting them
+      // inside a mask can make an engine switch compositing paths — in a
+      // throttled tab it was enough to stop the Hero illustration rastering
+      // altogether. Because the mask exists only while a transition is actually
+      // in flight, that exposure lasts the length of the transition rather than
+      // the whole session, and at rest those layers are untouched. If a flicker
+      // ever shows up on real hardware, this is the first place to look.
+      if (edge === 0) {
+        maskEl.style.maskImage = "none";
+        maskEl.style.setProperty("-webkit-mask-image", "none");
+        maskOnRef.current = false;
+        return;
+      }
+      // Custom property first, then the gradient that reads it — so the
+      // declaration is never briefly applied with an unresolved var().
+      maskEl.style.setProperty("--fr-mask-edge", `${edge}%`);
+      if (!maskOnRef.current) {
+        // Written once per transition, not per frame: after this only the
+        // custom property changes, so no four-stop gradient string is re-parsed
+        // 60 times a second. mask-repeat matters — the default is `repeat` and
+        // the row overflows this box by 1500%.
+        maskEl.style.maskImage = MASK_GRADIENT;
+        maskEl.style.maskRepeat = "no-repeat";
+        maskEl.style.setProperty("-webkit-mask-image", MASK_GRADIENT);
+        maskEl.style.setProperty("-webkit-mask-repeat", "no-repeat");
+        maskOnRef.current = true;
+      }
     };
-    sync(); // set the initial transform before the first scroll
+
+    // Reduced motion kills the feather outright rather than shortening it. The
+    // rail's panel (SegmentedRail) degrades instead of disabling because its
+    // animation carries information; this one is purely ornamental softening
+    // layered over travel that continues either way, so there is no reduced
+    // form of it worth keeping. matchMedia rather than Motion's
+    // useReducedMotion, matching how this same file already reads the
+    // touch/pointer query — CLAUDE.md keeps scroll-scrubbed work out of Motion.
+    const reduceQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onReduceChange = () => {
+      reduceMotionRef.current = reduceQuery.matches;
+      sync();
+    };
+    // Also performs the initial sync — setting the transform, and the correct
+    // at-rest mask state, before the first scroll event.
+    onReduceChange();
 
     // Keyboard: ArrowDown/PageDown/Space → next, ArrowUp/PageUp → previous.
     // navigateTo does a smooth native scrollTo, which the scroll handler above
@@ -394,6 +507,7 @@ export default function FastRouterSlidesPage() {
 
     sc.addEventListener("scroll", sync, { passive: true });
     window.addEventListener("keydown", onKey);
+    reduceQuery.addEventListener("change", onReduceChange);
     // Recompute the transform when the container is resized (its width, and so
     // the per-slide pixel step, changes).
     const observer = new ResizeObserver(sync);
@@ -401,6 +515,7 @@ export default function FastRouterSlidesPage() {
     return () => {
       sc.removeEventListener("scroll", sync);
       window.removeEventListener("keydown", onKey);
+      reduceQuery.removeEventListener("change", onReduceChange);
       observer.disconnect();
     };
   }, [isTouch, navigateTo]);
@@ -524,25 +639,72 @@ export default function FastRouterSlidesPage() {
               className="sticky top-0 w-full overflow-hidden"
               style={{ height: stageHeight }}
             >
-              {/* Horizontal row — translateX written imperatively from scroll
-                  position (see the pointer effect). */}
+              {/* Colour-only mirror of the row, OUTSIDE the mask, travelling on
+                  the same transform. This is what lets the edge fade exist at
+                  all: the mask makes the slides translucent at the viewport
+                  edges, and every slide paints its own opaque bg-bg-primary, so
+                  without this the BACKGROUND would dissolve too. On the 14
+                  normal slides that is invisible (body is the same colour), but
+                  the two chapter intros carry .chapter-intro-invert, which
+                  re-scopes --color-bg-primary to the OPPOSITE tone — a dark card
+                  would have dissolved into a light page, a visible band creeping
+                  in at exactly the deck's most dramatic moments. With a matching
+                  colour behind, only text, grid and framed assets fade; the
+                  background never moves. Also why the mask sits on a wrapper
+                  rather than on the sticky itself — on the sticky it would mask
+                  this layer too.
+
+                  Which cells invert is read from SLIDE_RAIL_MODE, the array that
+                  already encodes it, so a future Evaluations intro fixes this
+                  for free rather than needing a second list kept in sync. */}
               <div
-                ref={rowRef}
-                className="flex h-full will-change-transform"
+                ref={backdropRef}
+                aria-hidden="true"
+                data-fr-backdrop=""
+                className="absolute left-0 top-0 flex h-full will-change-transform"
                 style={{ width: `${SLIDE_IDS.length * 100}%` }}
               >
-                {SLIDE_IDS.map((id, index) => {
-                  const Slide = SLIDE_COMPONENTS[index];
-                  return (
-                    <div
-                      key={id}
-                      className="h-full shrink-0"
-                      style={{ width: `${100 / SLIDE_IDS.length}%` }}
-                    >
-                      <Slide />
-                    </div>
-                  );
-                })}
+                {SLIDE_IDS.map((id, index) => (
+                  <div
+                    key={`backdrop-${id}`}
+                    className={`h-full shrink-0 bg-bg-primary ${
+                      SLIDE_RAIL_MODE[index] === "invert"
+                        ? "chapter-intro-invert"
+                        : ""
+                    }`}
+                    style={{ width: `${100 / SLIDE_IDS.length}%` }}
+                  />
+                ))}
+              </div>
+
+              {/* Mask wrapper. Carries the edge feather, and deliberately does
+                  NOT move — the row inside it does, so the dissolve stays
+                  pinned to the real viewport edges instead of travelling with
+                  the slides. One viewport-sized box repainting per frame rather
+                  than the 16-viewport-wide row. The mask properties are written
+                  imperatively from sync(), not through React's style prop, for
+                  the same reason the row's transform is (see above). */}
+              <div ref={maskRef} className="relative z-10 h-full w-full">
+                {/* Horizontal row — translateX written imperatively from scroll
+                    position (see the pointer effect). */}
+                <div
+                  ref={rowRef}
+                  className="flex h-full will-change-transform"
+                  style={{ width: `${SLIDE_IDS.length * 100}%` }}
+                >
+                  {SLIDE_IDS.map((id, index) => {
+                    const Slide = SLIDE_COMPONENTS[index];
+                    return (
+                      <div
+                        key={id}
+                        className="h-full shrink-0"
+                        style={{ width: `${100 / SLIDE_IDS.length}%` }}
+                      >
+                        <Slide />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
