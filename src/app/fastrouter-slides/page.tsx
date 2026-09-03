@@ -225,6 +225,9 @@ export default function FastRouterSlidesPage() {
   // entirely instead of re-hiding fourteen already-hidden slides every frame.
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const slideHiddenRef = useRef<boolean[]>([]);
+  // A jump of more than one slide, so the transition can go straight from
+  // where the reader was to where they asked to be — see navigateTo.
+  const jumpRef = useRef<{ from: number; to: number } | null>(null);
   const reduceMotionRef = useRef(false);
   const { isDark } = useTheme();
   const { setInvertSurface } = useHeaderInvertSurface();
@@ -290,6 +293,32 @@ export default function FastRouterSlidesPage() {
     const sc = scrollRef.current;
     if (!sc) return;
     const clamped = Math.max(0, Math.min(SLIDE_IDS.length - 1, index));
+
+    // Jumping several slides at once used to flash every slide in between.
+    // The smooth scrollTo below genuinely travels through all their scroll
+    // positions, and sync() faithfully revealed and hid each one on the way —
+    // a dozen dissolves in the time meant for one. Record the jump so sync()
+    // can treat it as a single transition between the two ENDPOINTS and hide
+    // everything else. Only for real jumps: an adjacent step, including the
+    // keyboard's next/previous, is already exactly this transition.
+    // Origin read straight off the scroll container rather than from
+    // activeIndexRef, which lags by a render (it is written from an effect on
+    // activeIndex). Scroll position is the deck's source of truth everywhere
+    // else; using it here means the jump's endpoints can't be stale.
+    const max = sc.scrollHeight - sc.clientHeight;
+    const from =
+      max > 0
+        ? Math.round((sc.scrollTop / max) * (SLIDE_IDS.length - 1))
+        : 0;
+
+    if (Math.abs(clamped - from) > 1) {
+      jumpRef.current = { from, to: clamped };
+      // Settle the rail and the header's invert surface on the destination up
+      // front rather than letting them tick through every chapter en route —
+      // the same thing the touch path does with its programmaticScroll guard.
+      setActiveIndex(clamped);
+    }
+
     sc.scrollTo({ top: clamped * sc.clientHeight, behavior: "smooth" });
   }, []);
 
@@ -400,8 +429,20 @@ export default function FastRouterSlidesPage() {
       const max = sc.scrollHeight - sc.clientHeight;
       const progress = max > 0 ? sc.scrollTop / max : 0;
       const pos = progress * (slides - 1);
+      // Resolve the jump first: it ends when the destination is reached, and
+      // is abandoned if the reader takes over and scrolls back out of its span,
+      // so a cancelled jump can't leave the deck stuck showing two slides.
+      let jump = jumpRef.current;
+      if (jump) {
+        const travelled = (pos - jump.from) / (jump.to - jump.from);
+        if (travelled >= 0.998 || travelled < -0.05) {
+          jumpRef.current = null;
+          jump = null;
+        }
+      }
+
       const index = Math.round(pos);
-      if (index !== activeIndexRef.current) setActiveIndex(index);
+      if (!jump && index !== activeIndexRef.current) setActiveIndex(index);
 
       // --- masked reveal -------------------------------------------------
       // Per slide, `d` is its signed distance from the current position: 0 when
@@ -419,14 +460,57 @@ export default function FastRouterSlidesPage() {
       // Smoothstep rather than the house cubic-bezier(0.22, 1, 0.36, 1): that
       // curve is an ease-OUT for a state change with a start and an end, and
       // this value is scrubbed, so it wants a symmetric ease-in-out.
+      // During a jump only the two endpoints take part, and they play the
+      // ordinary adjacent-slide transition between them. No z-index juggling is
+      // needed in either direction: the higher-index slide always stacks above,
+      // so going forward it is the one being revealed, and coming back it is
+      // the one whose mask closes again to uncover the destination underneath.
+      // That is exactly the normal behaviour, just with a gap in the middle.
       const drift = sc.clientWidth * REVEAL_DRIFT_RATIO;
       const hidden = slideHiddenRef.current;
+      let pair: { lo: number; hi: number; reveal: number } | null = null;
+      if (jump) {
+        const travelled = Math.min(
+          1,
+          Math.max(0, (pos - jump.from) / (jump.to - jump.from))
+        );
+        const forward = jump.to > jump.from;
+        pair = {
+          lo: Math.min(jump.from, jump.to),
+          hi: Math.max(jump.from, jump.to),
+          reveal: forward ? travelled : 1 - travelled,
+        };
+      }
+
       for (let i = 0; i < slides; i++) {
         const el = slideRefs.current[i];
         if (!el) continue;
-        const d = pos - i;
 
-        if (d <= -1 || d >= 1) {
+        // `linearReveal` is how far this slide has been revealed and
+        // `offsetUnits` its drift in multiples of one step, so the two modes
+        // differ only in how those are derived — everything below is shared.
+        let live: boolean;
+        let linearReveal: number;
+        let offsetUnits: number;
+        if (pair) {
+          live = i === pair.lo || i === pair.hi;
+          const isHigh = i === pair.hi;
+          linearReveal = isHigh ? pair.reveal : 1;
+          offsetUnits = isHigh ? 1 - pair.reveal : -pair.reveal;
+        } else {
+          const d = pos - i;
+          live = d > -1 && d < 1;
+          // Clamped BEFORE the smoothstep below, which is only defined on
+          // [0, 1]: a slide already passed has d > 0, so an unclamped d + 1
+          // feeds it values above 1, where the polynomial turns back downward
+          // and even goes negative. That put a spurious, reversing mask on the
+          // OUTGOING slide — it would have dissolved out from under the
+          // incoming one instead of sitting solid behind it.
+          linearReveal = Math.min(1, Math.max(0, d + 1));
+          offsetUnits = i - pos;
+        }
+
+        if (!live) {
           if (hidden[i] !== true) {
             el.style.visibility = "hidden";
             el.style.maskImage = "none";
@@ -440,26 +524,19 @@ export default function FastRouterSlidesPage() {
           hidden[i] = false;
         }
 
-        // Clamped BEFORE the smoothstep, which is only defined on [0, 1]:
-        // a slide already passed has d > 0, so an unclamped d + 1 feeds it
-        // values above 1, where the polynomial turns back downward and even
-        // goes negative. That put a spurious, reversing mask on the OUTGOING
-        // slide — it would have dissolved out from under the incoming one
-        // instead of sitting solid behind it.
-        const linear = Math.min(1, Math.max(0, d + 1));
         // Reduced motion keeps the deck usable but removes the animation
         // outright: a hard swap at the halfway point and no drift. There is no
         // reduced form of "a mask sweeping across the screen" that is not still
         // a mask sweeping across the screen.
         const t = reduceMotionRef.current
-          ? linear < 0.5
+          ? linearReveal < 0.5
             ? 0
             : 1
-          : linear * linear * (3 - 2 * linear);
+          : linearReveal * linearReveal * (3 - 2 * linearReveal);
 
         el.style.transform = reduceMotionRef.current
           ? "none"
-          : `translate3d(${((i - pos) * drift).toFixed(1)}px, 0, 0)`;
+          : `translate3d(${(offsetUnits * drift).toFixed(1)}px, 0, 0)`;
 
         if (t >= 1) {
           // Fully revealed — drop the mask rather than leave a fully-open one
