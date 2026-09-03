@@ -182,6 +182,9 @@ export default function FastRouterSlidesPage() {
   // adaptive colour the whole way down. Cleared by the scroll tween itself
   // (see navigateToChapter), so it can't be left stuck on.
   const programmaticScroll = useRef(false);
+  // The in-flight jump tween, so a second tap (or unmount) can kill it rather
+  // than leaving two tweens fighting over one scroll position.
+  const scrollTween = useRef<gsap.core.Tween | null>(null);
   const { isDark } = useTheme();
   const { setInvertSurface } = useHeaderInvertSurface();
 
@@ -282,23 +285,56 @@ export default function FastRouterSlidesPage() {
       // Set the destination's chapter immediately and freeze the spy for the
       // duration of the tween, so the pill reads the section you asked for the
       // whole way there instead of ticking through every slide in between.
-      // autoKill hands control straight back if the reader scrolls mid-flight;
-      // onInterrupt is what releases the spy in that case (onComplete never
-      // fires for a killed tween).
+      //
+      // Handing control back mid-flight is done with a real touchstart/wheel
+      // listener, NOT ScrollToPlugin's `autoKill`. autoKill infers "the reader
+      // grabbed the page" by comparing the scroll position it reads back each
+      // tick against the one it just wrote — and iOS updates scroll position
+      // off the main thread, so those two routinely disagree through no fault
+      // of the reader. On iPhone (Safari and Chrome alike, both WebKit) that
+      // made every jump die a few frames in: the page would start moving
+      // toward the section and stop well short of it. A touch or a wheel event
+      // is the thing actually being inferred, so listen for it directly.
+      // Kill any previous jump FIRST: that fires its onInterrupt, which runs
+      // the old release — including clearing the spy guard. Setting the guard
+      // before this would have it immediately unset by the tween we cancelled,
+      // leaving the new jump unguarded on a fast second tap.
+      scrollTween.current?.kill();
       programmaticScroll.current = true;
       setActiveIndex(first);
+
+      const cancel = () => scrollTween.current?.kill();
       const release = () => {
         programmaticScroll.current = false;
+        scrollTween.current = null;
+        window.removeEventListener("touchstart", cancel);
+        window.removeEventListener("wheel", cancel);
       };
-      gsap.to(window, {
+
+      scrollTween.current = gsap.to(window, {
         duration: 0.8,
         ease: "power2.inOut",
-        scrollTo: { y: el, offsetY: headerHeight, autoKill: true },
+        scrollTo: { y: el, offsetY: headerHeight },
         onComplete: release,
         onInterrupt: release,
       });
+      // Attached after the tween starts, so the tap that opened this jump —
+      // whose own touchstart has already fired by the time click runs — can't
+      // cancel the very scroll it asked for.
+      window.addEventListener("touchstart", cancel, { passive: true });
+      window.addEventListener("wheel", cancel, { passive: true });
     },
     [navigateTo, isTouch, headerHeight]
+  );
+
+  // Leaving the page mid-jump kills the tween, whose onInterrupt runs the same
+  // release that detaches its listeners — otherwise a tween and two window
+  // listeners outlive the component that started them.
+  useEffect(
+    () => () => {
+      scrollTween.current?.kill();
+    },
+    []
   );
 
   // Pointer deck driver: map the scroll container's vertical scroll position
