@@ -18,6 +18,8 @@ import {
   CouncilDecision02,
   CouncilDecision03,
   CouncilDecision04,
+  ObservabilityDecision01,
+  ObservabilityDecision02,
 } from "@/components/fastrouter-slides/DecisionSlide";
 import RejectedVsShippedSlide from "@/components/fastrouter-slides/RejectedVsShippedSlide";
 import ObservabilityIntroSlide from "@/components/fastrouter-slides/ObservabilityIntroSlide";
@@ -46,6 +48,8 @@ const SLIDE_IDS = [
   "council-decision-03",
   "council-decision-04",
   "observability-intro",
+  "observability-decision-01",
+  "observability-decision-02",
 ] as const;
 // Parallel array of slide bodies, index-aligned with SLIDE_IDS — lets both
 // the touch stack and the pointer deck iterate rather than hardcoding two
@@ -65,6 +69,8 @@ const SLIDE_COMPONENTS = [
   CouncilDecision03,
   CouncilDecision04,
   ObservabilityIntroSlide,
+  ObservabilityDecision01,
+  ObservabilityDecision02,
 ] as const;
 // Parallel array: which SegmentedRail chapter tick each slide lights up.
 // Distinct from SLIDE_IDS (React keys) because several slides can share one
@@ -87,6 +93,8 @@ const SLIDE_CHAPTER_IDS = [
   "council",
   "council",
   "observability",
+  "observability",
+  "observability",
 ] as const;
 // Parallel array: how each slide's background relates to the global toggle,
 // which decides whether the rail's ticks read light or dark over it.
@@ -98,8 +106,10 @@ const SLIDE_CHAPTER_IDS = [
 //     Council decision — all plain token surfaces).
 //   - "invert": a `chapter-intro-invert` surface that renders OPPOSITE to the
 //     toggle (globals.css) as a "new feature" signal, so the rail must be the
-//     inverse of the toggle too. Council intro (index 4) is the only one so
-//     far; the coming Observability/Evaluations intros will join it.
+//     inverse of the toggle too. The two chapter intros (Council at index 4,
+//     Observability at 13) are the only ones; the coming Evaluations intro
+//     will join them. A chapter's DECISION slides are plain bg-bg-primary and
+//     stay "follow" — only the intro card inverts.
 type SlideRailMode = "fixed-dark" | "follow" | "invert";
 const SLIDE_RAIL_MODE: readonly SlideRailMode[] = [
   "fixed-dark",
@@ -116,6 +126,8 @@ const SLIDE_RAIL_MODE: readonly SlideRailMode[] = [
   "follow",
   "follow",
   "invert",
+  "follow",
+  "follow",
 ];
 // Fallback only, used before the real measurement below runs (SSR / first
 // paint). Header's real height (~74px) is measured directly rather than

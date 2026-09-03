@@ -5,7 +5,8 @@ import ThemeAwareVideo from "@/components/shared/ThemeAwareVideo";
 import DecisionAssetFrame from "@/components/shared/DecisionAssetFrame";
 
 // Reusable TEMPLATE for a single "decision" slide in the fastrouter-slides
-// deck, plus the four Council decisions themselves. Figma desktop nodes
+// deck, plus the decisions themselves — four for Council, two for
+// Observability. Figma desktop nodes
 // 7202:99233 / 100116 / 100926 / 101754 (decisions 01-04) and mobile 7295:1742,
 // file 2aoIFdaJMyNBEWeQESBEzG. Every decision follows the same shape (a ghost
 // number, a "DECISION · {chapter}" eyebrow, a headline, a Chose / Gave up / Why
@@ -140,6 +141,58 @@ export const COUNCIL_DECISIONS: readonly Decision[] = [
       light: "/images/fastrouter/fr-decision-04-persistent-strip.mp4",
       dark: "/images/fastrouter/fr-decision-04-persistent-strip-dark.mp4",
       alt: "Council UI with a persistent member-avatar strip visible above the Peer Rankings stage",
+    },
+  },
+];
+
+// Observability's two decisions. Numbering restarts at 01 per chapter (the
+// eyebrow names which chapter, so 01/02 here doesn't collide with Council's
+// 01-04), and both assets are screen recordings for the same reason two of
+// Council's are: the point of each is something happening over time — a filter
+// being layered onto the dashboard without disturbing the global one, and the
+// section order revealing itself as you travel down the page.
+//
+// Copy is NOT new. All six strings are verbatim from the vertical-scroll
+// route's own Observability section (fastrouter/ObservabilityIntro.tsx:45-76),
+// including both aria-labels, so the two routes describe the same two
+// decisions identically. That's deliberate: unlike the Council decisions —
+// where the slide frames and the vertical route word the same decision
+// differently and were left unreconciled — there is no separate slide-frame
+// wording for these, so there was nothing to reconcile and nothing to invent.
+// The one difference is the label above the first block: the vertical route
+// calls it "Decision", this template calls it "Chose" across all six slides,
+// since the eyebrow directly above already reads "DECISION · OBSERVABILITY".
+export const OBSERVABILITY_DECISIONS: readonly Decision[] = [
+  {
+    id: "observability-decision-01",
+    number: "01",
+    chapter: "OBSERVABILITY",
+    headline: "Two filter layers — global + card-level",
+    chose:
+      "Global filters control the whole dashboard. Card-level filters allow tactical investigation without changing global context.",
+    gaveUp: "Single filter layer — simpler to build and explain.",
+    why: "Strategic analysis and tactical investigation are different cognitive modes. One filter for both forces constant context-switching.",
+    asset: {
+      kind: "video",
+      light: "/images/fastrouter/fr-observability-filters.mp4",
+      dark: "/images/fastrouter/fr-observability-filters-dark.mp4",
+      alt: "Observability dashboard showing the Provider filter panel, a card-level filter layered on top of the global date-range filter",
+    },
+  },
+  {
+    id: "observability-decision-02",
+    number: "02",
+    chapter: "OBSERVABILITY",
+    headline: "Information hierarchy as priority stack",
+    chose:
+      "Section order follows the user's question sequence: what's consuming usage → how much overall → how it's trending → how fast and reliable.",
+    gaveUp: "Conventional layout ordered by visual balance.",
+    why: "A user arriving after an unexpected bill spike hits the most relevant information first, not buried three scrolls down.",
+    asset: {
+      kind: "video",
+      light: "/images/fastrouter/fr-observability-dashboard.mp4",
+      dark: "/images/fastrouter/fr-observability-dashboard-dark.mp4",
+      alt: "Full observability dashboard showing All Keys, All Models, All Providers, All Tags, All Projects, and Gateway vs BYOK Costs panels",
     },
   },
 ];
@@ -312,4 +365,10 @@ export function CouncilDecision03() {
 }
 export function CouncilDecision04() {
   return <DecisionSlide decision={COUNCIL_DECISIONS[3]} />;
+}
+export function ObservabilityDecision01() {
+  return <DecisionSlide decision={OBSERVABILITY_DECISIONS[0]} />;
+}
+export function ObservabilityDecision02() {
+  return <DecisionSlide decision={OBSERVABILITY_DECISIONS[1]} />;
 }
