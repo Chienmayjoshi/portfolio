@@ -255,6 +255,7 @@ export default function SegmentedRail({
   variant = "rail",
 }: SegmentedRailProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [lastHoveredIndex, setLastHoveredIndex] = useState(0);
   const [pillOffset, setPillOffset] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   // A 2-in-1 switching from touch to a mouse flips `variant` to "rail"
@@ -303,7 +304,10 @@ export default function SegmentedRail({
     return () => window.removeEventListener("keydown", onKey);
   }, [panelOpen]);
 
-  const hovered = hoveredIndex !== null ? CHAPTERS[hoveredIndex] : null;
+  // The pill is always mounted and shows/hides by opacity, so `hoveredIndex`
+  // going null can't leave it with nothing to render mid-fade. It keeps the
+  // last chapter the pointer was over until the pointer picks a new one.
+  const pillChapter = CHAPTERS[lastHoveredIndex];
 
   return (
     <>
@@ -313,28 +317,48 @@ export default function SegmentedRail({
       className="group fixed bottom-32px left-1/2 z-20 -translate-x-1/2"
       style={{ width: "min(760px, calc(100% - 160px))" }}
     >
-      <div className="relative flex w-full justify-center gap-6px">
-        {hovered && (
-          // Content-width, not fixed: this pill only appears on hover, one
-          // label at a time, so there's no scroll-driven label-flicker to
-          // guard against (unlike the mobile status pill, which stays fixed
-          // at 200px). It shrink-wraps its label; whitespace-nowrap keeps that
-          // label on one line as the pill re-centers over each hovered tick.
-          <div
-            className={`pointer-events-none absolute bottom-[calc(100%+8px)] left-0 z-10 flex items-center gap-16px whitespace-nowrap rounded-full px-16px py-8px font-ui text-[13px] shadow-lg transition-transform duration-300 ease-out ${colors.pillBg} ${colors.pillText}`}
-            style={{ transform: `translateX(calc(${pillOffset}px - 50%))` }}
-          >
-            {hovered.number && (
-              <>
-                <span className="font-mono font-medium text-[11px] uppercase tracking-[0.78px] opacity-60">
-                  {hovered.number}
-                </span>
-                <span className={`h-12px w-px ${colors.pillDivider}`} />
-              </>
-            )}
-            <span>{hovered.label}</span>
-          </div>
-        )}
+      {/* onMouseLeave lives HERE, on the row, not on each tick. Per-tick
+          mouseleave was what made the pill jump rather than glide: crossing
+          the 6px gap between two ticks fired the first tick's mouseleave, the
+          pill unmounted, and the next tick's mouseenter mounted a brand-new
+          element at the new offset — a fresh node has no previous transform to
+          transition from, so every move between ticks was an instant teleport
+          and transition-transform never got a chance to run. The gaps belong
+          to this row, so leaving a tick for its neighbour no longer counts as
+          leaving at all, and the one persistent pill just slides. */}
+      <div
+        className="relative flex w-full justify-center gap-6px"
+        onMouseLeave={() => setHoveredIndex(null)}
+      >
+        {/* Always mounted, shown/hidden by opacity — see above. Content-width,
+            not fixed: one label at a time, so there's no scroll-driven
+            label-flicker to guard against (unlike the mobile pill, which pins
+            its width). It shrink-wraps its label; whitespace-nowrap keeps that
+            label on one line as the pill re-centres over each hovered tick. */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute bottom-[calc(100%+8px)] left-0 z-10 flex items-center whitespace-nowrap rounded-full px-16px py-8px font-ui text-[13px] shadow-lg transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${colors.pillBg} ${colors.pillText}`}
+          style={{
+            transform: `translateX(calc(${pillOffset}px - 50%))`,
+            opacity: hoveredIndex !== null ? 1 : 0,
+          }}
+        >
+          {pillChapter.number && (
+            <>
+              <span className="font-mono font-medium text-[11px] uppercase tracking-[0.78px] opacity-60">
+                {pillChapter.number}
+              </span>
+              {/* Asymmetric by request: 16px between the number and the
+                  divider, 4px between the divider and the label. A single flex
+                  `gap` can't express that, so the spacing sits on the divider
+                  itself. */}
+              <span
+                className={`ml-16px mr-4px h-12px w-px ${colors.pillDivider}`}
+              />
+            </>
+          )}
+          <span>{pillChapter.label}</span>
+        </div>
 
         {CHAPTERS.map((chapter, index) => {
           const isBuilt = BUILT_CHAPTER_IDS.has(chapter.id);
@@ -350,26 +374,48 @@ export default function SegmentedRail({
               aria-current={chapter.id === activeId ? "true" : undefined}
               onMouseEnter={(e) => {
                 setHoveredIndex(index);
+                setLastHoveredIndex(index);
                 setPillOffset(
                   e.currentTarget.offsetLeft + e.currentTarget.offsetWidth / 2
                 );
               }}
-              onMouseLeave={() => setHoveredIndex(null)}
               onClick={() => onNavigate(chapter.id)}
               className={`relative flex h-16px max-w-60px flex-1 items-center ${
                 isBuilt ? "cursor-pointer" : "cursor-default"
               }`}
             >
+              {/* Thickness is scaleY on a bar that is ALWAYS 5px tall, not an
+                  animated height. Two things were wrong with animating height:
+                  it ran on the layout thread every frame, and — the visible
+                  one — the track animated over 300ms with the default ease
+                  while the fill animated over 500ms ease-out, so the two bars
+                  grew at different rates and the line thickened in two stages.
+                  Both now carry an identical transform transition, so they
+                  cannot fall out of step, and scaleY composites instead of
+                  relaying out. 5px x 0.4 = the same 2px resting line. */}
               <span
-                className={`block h-[2px] w-full rounded-full transition-[height] duration-300 group-hover:h-[5px] ${colors.track} ${colors.halo}`}
+                className={`block h-[5px] w-full origin-center scale-y-[0.4] rounded-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-y-100 ${colors.track} ${colors.halo}`}
               />
+              {/* The fill carries TWO independent transforms — read-so-far
+                  progress and hover thickness — on two elements rather than
+                  one, so each keeps its own timing (progress stays the slower
+                  500ms) and the thickness half can share the track's exact
+                  class string. Composing both into a single inline transform
+                  would have forced the hover state through JS instead, and the
+                  CSS `group` is the <nav>, which is wider than this row:
+                  hovering the nav's own padding fires :hover but no tick's
+                  mouseenter, so the two sources would disagree at the edges. */}
               <span
-                className={`absolute inset-y-0 left-0 my-auto h-[2px] w-full rounded-full transition-[transform,height] duration-500 ease-out group-hover:h-[5px] ${colors.fill} ${colors.halo}`}
+                className="absolute inset-y-0 left-0 my-auto block h-[5px] w-full transition-transform duration-500 ease-out"
                 style={{
                   transform: `scaleX(${segmentFill})`,
                   transformOrigin: "0 50%",
                 }}
-              />
+              >
+                <span
+                  className={`block size-full origin-center scale-y-[0.4] rounded-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-y-100 ${colors.fill} ${colors.halo}`}
+                />
+              </span>
             </button>
           );
         })}
