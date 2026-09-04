@@ -269,7 +269,7 @@ export default function ConceptualGroundingSlide() {
           <div className="flex flex-col gap-24px">
             <Eyebrow />
             <div className="flex flex-col gap-16px">
-              <h1 className="font-display text-[48px] text-text-primary leading-[56px] tracking-[-0.48px]">
+              <h1 className="font-display text-slide-title text-text-primary">
                 Reference: Andrej Karpathy&apos;s llm-council
               </h1>
               <p className="font-ui font-normal text-[16px] text-text-muted leading-[28px] tracking-[0.08px]">
@@ -308,7 +308,7 @@ export default function ConceptualGroundingSlide() {
       <div className="relative z-10 flex w-full flex-col gap-24px px-20px py-40px md:hidden">
         <div className="flex flex-col gap-16px">
           <Eyebrow />
-          <h1 className="font-display text-[32px] text-text-primary leading-[40px] tracking-[-0.32px]">
+          <h1 className="font-display text-slide-title-sm text-text-primary">
             Reference: Andrej Karpathy&apos;s llm-council
           </h1>
           <p className="font-ui font-normal text-[16px] text-text-primary leading-[28px] tracking-[0.08px]">

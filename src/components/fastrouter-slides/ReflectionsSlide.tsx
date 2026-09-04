@@ -116,7 +116,7 @@ export default function ReflectionsSlide() {
             <span className="font-mono font-medium text-[13px] text-text-accent uppercase leading-[18px] tracking-[0.78px]">
               Reflections
             </span>
-            <h1 className="font-display text-[32px] text-text-primary leading-[40px] tracking-[-0.32px] md:text-[48px] md:leading-[56px] md:tracking-[-0.48px]">
+            <h1 className="font-display text-slide-title-sm text-text-primary md:text-slide-title">
               My key takeaways and learnings.
             </h1>
           </div>

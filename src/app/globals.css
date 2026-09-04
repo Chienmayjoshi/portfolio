@@ -88,6 +88,43 @@
   --radius-xl: 16px;
   --radius-frame: 30px;
   --radius-full: 9999px;
+
+  /* ------------------------------------------------------------------
+     TYPE SCALE — the two `fastrouter-slides` deck styles that repeat
+     across slides, so a size change lands in ONE place instead of nine
+     class strings. Everything else in the project still carries literal
+     `text-[Npx] leading-[Npx] tracking-[Npx]` triples; these two were
+     lifted out because they are the deck's shared display voice and had
+     already drifted (see the Hero note in design-tokens.json).
+
+     Tailwind v4's font-size namespace: `--text-x` generates `text-x`, and
+     the `--line-height` / `--letter-spacing` suffixes ride along with it,
+     so ONE utility replaces the whole triple. That matters beyond brevity
+     — a token that only carried size would leave `leading-*`/`tracking-*`
+     as separate utilities, and Tailwind sorts those into a different
+     position in the output than font-size, so an unprefixed `leading-[]`
+     could out-cascade a `md:` font-size token. Hence a full -sm token for
+     the mobile step too, rather than literals at the small end: two
+     utilities of the SAME kind, where the `md:` one reliably wins.
+
+     Reads as `text-slide-title`, not `text-text-slide-title` — the color
+     tokens are `--color-text-*` (hence `text-text-primary`), a different
+     namespace, so there is no collision to worry about here. */
+  --text-slide-title: 48px;
+  --text-slide-title--line-height: 56px;
+  --text-slide-title--letter-spacing: -0.48px;
+  --text-slide-title-sm: 32px;
+  --text-slide-title-sm--line-height: 40px;
+  --text-slide-title-sm--letter-spacing: -0.32px;
+
+  /* The accent-ruled line — decision 01's pull-quote and decision 02's
+     subtitle, one component, two placements. */
+  --text-slide-accent: 24px;
+  --text-slide-accent--line-height: 36px;
+  --text-slide-accent--letter-spacing: -0.1px;
+  --text-slide-accent-sm: 17px;
+  --text-slide-accent-sm--line-height: 28px;
+  --text-slide-accent-sm--letter-spacing: 0.085px;
 }
 
 /* ==========================================================================

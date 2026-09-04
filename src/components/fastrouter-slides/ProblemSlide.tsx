@@ -203,7 +203,7 @@ export default function ProblemSlide() {
               exactly, node 7249:6792 — desktop unchanged (56/64/-0.56).
               The old base fallback (40/46/-0.4) predated this mobile
               frame, same situation as Hero's headline before it. */}
-          <h1 className="w-full font-display text-text-primary text-[32px] leading-[40px] tracking-[-0.32px] md:pb-40px md:text-[56px] md:leading-[64px] md:tracking-[-0.56px]">
+          <h1 className="w-full font-display text-text-primary text-slide-title-sm md:pb-40px md:text-slide-title">
             The Problem
           </h1>
 

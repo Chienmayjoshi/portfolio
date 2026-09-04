@@ -65,7 +65,7 @@ export default function ProductSlide() {
             direct ask, overriding Figma node 7275:390's text-center),
             centered on desktop. Desktop wrapper rhythm is py-40 (node
             7070:61849). */}
-        <h1 className="w-full font-display text-text-primary text-[32px] leading-[40px] tracking-[-0.32px] md:w-[680px] md:py-40px md:text-center md:text-[56px] md:leading-[64px] md:tracking-[-0.56px]">
+        <h1 className="w-full font-display text-text-primary text-slide-title-sm md:w-[680px] md:py-40px md:text-center md:text-slide-title">
           What is Fastrouter?
         </h1>
 

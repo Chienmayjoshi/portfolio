@@ -142,7 +142,7 @@ export default function FeaturesSlide() {
       <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col items-start gap-40px px-20px pt-[56px] md:h-full md:items-center md:justify-center md:gap-0 md:px-0 md:pt-0">
         {/* Headline — left on mobile (32/40), centered on desktop (56/64),
             matching the other slides' convention. */}
-        <h1 className="w-full font-display text-[32px] text-text-primary leading-[40px] tracking-[-0.32px] md:max-w-[680px] md:py-40px md:text-center md:text-[56px] md:leading-[64px] md:tracking-[-0.56px]">
+        <h1 className="w-full font-display text-slide-title-sm text-text-primary md:max-w-[680px] md:py-40px md:text-center md:text-slide-title">
           The question eventually every AI team would ask
         </h1>
 

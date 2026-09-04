@@ -69,7 +69,7 @@ export default function CouncilIntroSlide() {
         {/* Headline — full-width centred, wraps naturally on mobile; the <br>
             forces Figma's two-line desktop composition (hidden on mobile so the
             line flows "where AI judges AI" there). */}
-        <h1 className="w-full text-center font-display text-[32px] text-text-primary leading-[40px] tracking-[-0.32px] md:text-[56px] md:leading-[64px] md:tracking-[-0.56px]">
+        <h1 className="w-full text-center font-display text-slide-title-sm text-text-primary md:text-slide-title">
           Designing trust in a system where{" "}
           <br className="hidden md:block" />
           AI judges AI.

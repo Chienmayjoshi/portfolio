@@ -113,6 +113,17 @@ things that follow from that:
   20px. That whole component was built off-system in Figma — treat it as
   the least reliable reference point in the file until it's cleaned up there.
 
+- The `fastrouter-slides` deck's slide title is 48px in code, 56px in Figma,
+  and its decision-template accent line (decision 01's pull-quote, decision
+  02's subtitle) is 24px in code, 28px in Figma. Both are direct-instruction
+  changes from 2026-09-04, not drift — Figma needs updating to match. They
+  live in `globals.css`'s `@theme` as `--text-slide-title` /
+  `--text-slide-accent` (each with a `-sm` mobile companion), so a further
+  size change is one edit, not fourteen class strings. All 14 slide titles
+  are on the token, including the five that were already 48px. Everything else in the
+  project still carries literal `text-[Npx] leading-[Npx] tracking-[Npx]`
+  triples; don't tokenize more of them speculatively.
+
 ## Animation — GSAP vs Motion, don't mix on one element
 
 - **Motion** (`import { motion } from "motion/react"` — formerly Framer

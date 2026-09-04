@@ -66,7 +66,7 @@ export default function EvaluationsIntroSlide() {
 
         {/* Headline — the long-form header's two-line composition; flows on
             mobile. */}
-        <h1 className="w-full text-center font-display text-[32px] text-text-primary leading-[40px] tracking-[-0.32px] md:py-40px md:text-[56px] md:leading-[64px] md:tracking-[-0.56px]">
+        <h1 className="w-full text-center font-display text-slide-title-sm text-text-primary md:py-40px md:text-slide-title">
           Model selection was gut feel{" "}
           <br className="hidden md:block" />
           dressed up as a decision.

@@ -197,7 +197,7 @@ export default function RejectedVsShippedSlide() {
               Rejected vs shipped
             </span>
             <div className="flex flex-col gap-24px md:gap-16px">
-              <h1 className="font-display text-[32px] text-text-primary leading-[40px] tracking-[-0.32px] md:text-[48px] md:leading-[56px] md:tracking-[-0.48px]">
+              <h1 className="font-display text-slide-title-sm text-text-primary md:text-slide-title">
                 Council was treated as a{" "}
                 <br className="hidden md:block" />
                 comparison tool.

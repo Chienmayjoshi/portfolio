@@ -146,7 +146,7 @@ export default function HeroSlide() {
                 an artifact of headless Chrome's --window-size CLI flag not
                 reliably setting the true CSS viewport at narrow widths,
                 not a layout problem in this component. */}
-            <h1 className="w-full font-display text-text-primary text-[32px] leading-[40px] tracking-[-0.32px] md:text-[56px] md:leading-[64px] md:tracking-[-1.2px]">
+            <h1 className="w-full font-display text-text-primary text-slide-title-sm md:text-slide-title">
               Enterprise AI teams were flying blind on every model decision.
             </h1>
 

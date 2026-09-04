@@ -421,7 +421,7 @@ function Rationale({ label, children }: { label: string; children: string }) {
 function AccentLine({ children }: { children: string }) {
   return (
     <div className="border-text-accent border-l-[3px] pl-20px">
-      <p className="font-ui font-semibold text-[17px] text-text-primary leading-[28px] tracking-[0.085px] md:text-[28px] md:leading-[40px] md:tracking-[-0.1px]">
+      <p className="font-ui font-semibold text-slide-accent-sm text-text-primary md:text-slide-accent">
         {children}
       </p>
     </div>
@@ -474,7 +474,7 @@ export default function DecisionSlide({
                   DECISION · {decision.chapter}
                 </span>
               </div>
-              <h1 className="font-display text-[32px] text-text-primary leading-[40px] tracking-[-0.32px] md:text-[56px] md:leading-[64px] md:tracking-[-0.56px]">
+              <h1 className="font-display text-slide-title-sm text-text-primary md:text-slide-title">
                 {decision.headline}
               </h1>
               {decision.subtitle && (

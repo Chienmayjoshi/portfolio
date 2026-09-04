@@ -59,7 +59,7 @@ export default function ReframeSlide() {
       <div className="relative z-10 flex w-full max-w-[730px] flex-col items-center px-20px md:px-0">
         {/* Title — 40px of air above and below (Figma's div:margin padding). */}
         <div className="py-40px">
-          <h1 className="whitespace-nowrap text-center font-display text-[32px] text-text-primary leading-[40px] tracking-[-0.32px] md:text-[56px] md:leading-[64px] md:tracking-[-0.56px]">
+          <h1 className="whitespace-nowrap text-center font-display text-slide-title-sm text-text-primary md:text-slide-title">
             The Reframe
           </h1>
         </div>
