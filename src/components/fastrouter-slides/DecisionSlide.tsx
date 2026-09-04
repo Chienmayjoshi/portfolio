@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import GridDepthLayer from "@/components/shared/GridDepthLayer";
 import ThemeSwap from "@/components/shared/ThemeSwap";
@@ -49,12 +52,29 @@ import DecisionAssetFrame from "@/components/shared/DecisionAssetFrame";
 // label it "WHY", as does the shipped vertical-scroll case study. Normalized
 // to "Why" here on that 3-frames-plus-shipped-route majority. Decision 01's
 // Figma frame is the outlier and should lose the question mark there.
-interface DecisionAsset {
-  kind: "image" | "video";
+// A single theme-aware source: one file per theme plus its description.
+interface AssetSource {
   light: string;
   dark: string;
   alt: string;
 }
+
+// One switchable mode on a "toggle" asset — a source plus the word on its
+// button.
+interface AssetMode extends AssetSource {
+  label: string;
+}
+
+// Three kinds of capsule content. "image" and "video" are the original two.
+// "toggle" (added for Evaluations decision 02) puts a segmented control above
+// the capsule and swaps the asset between two stills — the reader operates it,
+// which is exactly the case Figma draws for that decision and the vertical
+// -scroll route already builds as real state (EvaluationsFeature.tsx's
+// EvalReportToggle). Two modes, not N: the control is a two-up pill, and a
+// third mode would need a different control, so the type says two.
+type DecisionAsset =
+  | ({ kind: "image" | "video" } & AssetSource)
+  | { kind: "toggle"; modes: readonly [AssetMode, AssetMode] };
 
 interface Decision {
   id: string;
@@ -197,9 +217,163 @@ export const OBSERVABILITY_DECISIONS: readonly Decision[] = [
   },
 ];
 
+// A still inside the capsule. `object-top` so the crop keeps the header + Final
+// Verdict in view (same as FiveDecisions.tsx).
+function CapsuleImage({ source }: { source: AssetSource }) {
+  return (
+    <ThemeSwap
+      light={
+        <Image
+          src={source.light}
+          alt={source.alt}
+          fill
+          className="object-cover object-top"
+          sizes="(max-width: 767px) 100vw, 720px"
+        />
+      }
+      dark={
+        <Image
+          src={source.dark}
+          alt={source.alt}
+          fill
+          className="object-cover object-top"
+          sizes="(max-width: 767px) 100vw, 720px"
+        />
+      }
+    />
+  );
+}
+
+// The segmented control for a "toggle" asset, with its capsule underneath.
+//
+// Its own component rather than a branch inside DecisionCapsule so the useState
+// lives on a path that always renders it — a hook can't sit behind an
+// `asset.kind` check.
+//
+// CHROME IS DELIBERATELY IDENTICAL to the vertical-scroll route's
+// EvalReportToggle (EvaluationsFeature.tsx): same 44px pill on border-frame,
+// same 130x36 buttons, same rounded-18, same active treatment (bg-surface +
+// medium weight + the 1px/4px shadow). Same control, same decision, two routes
+// — they should not drift. Not extracted into shared/ yet: the two differ in
+// width and in how they order themselves against their column, so a shared
+// component would today be chrome plus two layout props. If a third caller
+// appears, extract then.
+//
+// The buttons are real buttons with aria-pressed rather than a radio group:
+// nothing is submitted, and the pressed/unpressed pair is what the visual
+// already communicates.
+function ToggleCapsule({
+  modes,
+  className,
+}: {
+  modes: readonly [AssetMode, AssetMode];
+  className?: string;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  return (
+    <div className={`flex flex-col items-start gap-16px ${className ?? ""}`}>
+      <div
+        role="group"
+        aria-label="Report mode"
+        className="flex h-[44px] items-center rounded-full bg-border-frame p-4px"
+      >
+        {modes.map((mode, i) => {
+          const active = i === activeIndex;
+          return (
+            <button
+              key={mode.label}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setActiveIndex(i)}
+              className={`flex h-[36px] w-[130px] items-center justify-center rounded-[18px] font-ui text-[14px] text-text-primary leading-[20px] tracking-[0.07px] transition-colors ${
+                active
+                  ? "bg-bg-surface font-medium shadow-[0px_1px_4px_0px_rgba(0,0,0,0.08)]"
+                  : "font-normal"
+              }`}
+            >
+              {mode.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <DecisionAssetFrame>
+        <CapsuleImage source={modes[activeIndex]} />
+      </DecisionAssetFrame>
+    </div>
+  );
+}
+
+// Evaluations' two decisions. Numbering restarts at 01 per chapter, same as
+// Observability's.
+//
+// Copy is NOT new, and none of it was written here. All eight strings are
+// verbatim from the vertical-scroll route's own Evaluations decisions
+// (fastrouter/EvaluationsFeature.tsx), including both "Gave up" blocks and
+// both aria/alt descriptions — same treatment as the Observability pair above,
+// and for the same reason: there is no separate slide-frame wording for these,
+// so there was nothing to reconcile and nothing to invent.
+//
+// WORTH KNOWING about those two "Gave up" blocks: in the vertical route both
+// are marked `hidden` (EvaluationsFeature.tsx) — present in the DOM, never
+// shown. They are shown here, on the reference the person supplied, which is
+// where the Gave-up copy is visible. If the vertical route's `hidden` is
+// deliberate rather than stale, these two blocks are the place that disagrees.
+//
+// Decision 02's asset is the deck's first "toggle" capsule — Single View vs
+// Compare Mode over the same evaluation report. The two report modes ARE the
+// decision, so a static still of either one would be arguing the point with
+// half the evidence.
+export const EVALUATIONS_DECISIONS: readonly Decision[] = [
+  {
+    id: "evaluations-decision-01",
+    number: "01",
+    chapter: "EVALUATIONS",
+    headline: "Fast Evals as the on-ramp",
+    chose:
+      "Pre-fills everything from your activity logs. One choice: Smart or Custom. Run immediately.",
+    gaveUp:
+      "Requiring users to configure dataset, models, and metrics before seeing any result.",
+    why: "The full form is powerful but front-loaded. Fast Evals builds the habit the powerful path rewards.",
+    asset: {
+      kind: "video",
+      light: "/images/fastrouter/fr-fast-evals.mp4",
+      dark: "/images/fastrouter/fr-fast-evals-dark.mp4",
+      alt: "Fast Evals flow, pre-filled from activity logs with a Smart or Custom choice, running immediately",
+    },
+  },
+  {
+    id: "evaluations-decision-02",
+    number: "02",
+    chapter: "EVALUATIONS",
+    headline: "Two ways to read an evaluation report",
+    chose: "Two distinct report modes, each answering a different question.",
+    gaveUp:
+      "A single combined view — all models, all prompts, all scores on one screen.",
+    why: "Each mode serves a user at a different stage. Mixing them forces everyone to filter out what they don’t need every time.",
+    asset: {
+      kind: "toggle",
+      modes: [
+        {
+          label: "Single View",
+          light: "/images/fastrouter/fr-evals-report-single.png",
+          dark: "/images/fastrouter/fr-evals-report-single-dark.png",
+          alt: "Evaluation report in Single View, showing one model's run in detail",
+        },
+        {
+          label: "Compare Mode",
+          light: "/images/fastrouter/fr-evals-report-compare.png",
+          dark: "/images/fastrouter/fr-evals-report-compare-dark.png",
+          alt: "Evaluation report in Compare mode, showing four models side by side",
+        },
+      ],
+    },
+  },
+];
+
 // The framed, theme-aware asset capsule. DecisionAssetFrame supplies the
-// gradient box + stroke ring + right fade. `object-top` so the crop keeps the
-// header + Final Verdict in view (same as FiveDecisions.tsx).
+// gradient box + stroke ring + right fade.
 function DecisionCapsule({
   asset,
   className,
@@ -207,6 +381,10 @@ function DecisionCapsule({
   asset: DecisionAsset;
   className?: string;
 }) {
+  if (asset.kind === "toggle") {
+    return <ToggleCapsule modes={asset.modes} className={className} />;
+  }
+
   return (
     <DecisionAssetFrame className={className}>
       {asset.kind === "video" ? (
@@ -217,26 +395,7 @@ function DecisionCapsule({
           aria-label={asset.alt}
         />
       ) : (
-        <ThemeSwap
-          light={
-            <Image
-              src={asset.light}
-              alt={asset.alt}
-              fill
-              className="object-cover object-top"
-              sizes="(max-width: 767px) 100vw, 720px"
-            />
-          }
-          dark={
-            <Image
-              src={asset.dark}
-              alt={asset.alt}
-              fill
-              className="object-cover object-top"
-              sizes="(max-width: 767px) 100vw, 720px"
-            />
-          }
-        />
+        <CapsuleImage source={asset} />
       )}
     </DecisionAssetFrame>
   );
@@ -371,4 +530,10 @@ export function ObservabilityDecision01() {
 }
 export function ObservabilityDecision02() {
   return <DecisionSlide decision={OBSERVABILITY_DECISIONS[1]} />;
+}
+export function EvaluationsDecision01() {
+  return <DecisionSlide decision={EVALUATIONS_DECISIONS[0]} />;
+}
+export function EvaluationsDecision02() {
+  return <DecisionSlide decision={EVALUATIONS_DECISIONS[1]} />;
 }

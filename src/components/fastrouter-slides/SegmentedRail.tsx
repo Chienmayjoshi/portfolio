@@ -51,6 +51,8 @@ const BUILT_CHAPTER_IDS = new Set([
   "features",
   "council",
   "observability",
+  "evaluations",
+  "reflections",
 ]);
 
 // Both icons are inline SVGs rather than an icon-package import — this repo
@@ -348,12 +350,13 @@ export default function SegmentedRail({
               <span className="font-mono font-medium text-[11px] uppercase tracking-[0.78px] opacity-60">
                 {pillChapter.number}
               </span>
-              {/* Asymmetric by request: 16px between the number and the
-                  divider, 4px between the divider and the label. A single flex
-                  `gap` can't express that, so the spacing sits on the divider
-                  itself. */}
+              {/* Symmetric 8px either side of the divider. Was 16/4, which
+                  read as the divider crowding the label; equal spacing was
+                  asked for directly against a screenshot. A single flex `gap`
+                  would also work now, but the spacing stays on the divider so
+                  it's obvious both sides are the same value. */}
               <span
-                className={`ml-16px mr-4px h-12px w-px ${colors.pillDivider}`}
+                className={`mx-8px h-12px w-px ${colors.pillDivider}`}
               />
             </>
           )}

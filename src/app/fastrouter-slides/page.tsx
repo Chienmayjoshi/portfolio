@@ -20,9 +20,15 @@ import {
   CouncilDecision04,
   ObservabilityDecision01,
   ObservabilityDecision02,
+  EvaluationsDecision01,
+  EvaluationsDecision02,
 } from "@/components/fastrouter-slides/DecisionSlide";
 import RejectedVsShippedSlide from "@/components/fastrouter-slides/RejectedVsShippedSlide";
 import ObservabilityIntroSlide from "@/components/fastrouter-slides/ObservabilityIntroSlide";
+import EvaluationsIntroSlide from "@/components/fastrouter-slides/EvaluationsIntroSlide";
+import TwoRejectedAttemptsSlide from "@/components/fastrouter-slides/TwoRejectedAttemptsSlide";
+import ShippedUnifiedFormSlide from "@/components/fastrouter-slides/ShippedUnifiedFormSlide";
+import ReflectionsSlide from "@/components/fastrouter-slides/ReflectionsSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { useHeaderInvertSurface } from "@/components/shared/HeaderProvider";
 
@@ -50,6 +56,12 @@ const SLIDE_IDS = [
   "observability-intro",
   "observability-decision-01",
   "observability-decision-02",
+  "evaluations-intro",
+  "evaluations-rejected",
+  "evaluations-shipped",
+  "evaluations-decision-01",
+  "evaluations-decision-02",
+  "reflections",
 ] as const;
 // Parallel array of slide bodies, index-aligned with SLIDE_IDS — lets both
 // the touch stack and the pointer deck iterate rather than hardcoding two
@@ -71,6 +83,12 @@ const SLIDE_COMPONENTS = [
   ObservabilityIntroSlide,
   ObservabilityDecision01,
   ObservabilityDecision02,
+  EvaluationsIntroSlide,
+  TwoRejectedAttemptsSlide,
+  ShippedUnifiedFormSlide,
+  EvaluationsDecision01,
+  EvaluationsDecision02,
+  ReflectionsSlide,
 ] as const;
 // Parallel array: which SegmentedRail chapter tick each slide lights up.
 // Distinct from SLIDE_IDS (React keys) because several slides can share one
@@ -95,6 +113,12 @@ const SLIDE_CHAPTER_IDS = [
   "observability",
   "observability",
   "observability",
+  "evaluations",
+  "evaluations",
+  "evaluations",
+  "evaluations",
+  "evaluations",
+  "reflections",
 ] as const;
 // Parallel array: how each slide's background relates to the global toggle,
 // which decides whether the rail's ticks read light or dark over it.
@@ -106,10 +130,10 @@ const SLIDE_CHAPTER_IDS = [
 //     Council decision — all plain token surfaces).
 //   - "invert": a `chapter-intro-invert` surface that renders OPPOSITE to the
 //     toggle (globals.css) as a "new feature" signal, so the rail must be the
-//     inverse of the toggle too. The two chapter intros (Council at index 4,
-//     Observability at 13) are the only ones; the coming Evaluations intro
-//     will join them. A chapter's DECISION slides are plain bg-bg-primary and
-//     stay "follow" — only the intro card inverts.
+//     inverse of the toggle too. The three chapter intros (Council at index 4,
+//     Observability at 13, Evaluations at 16) are the only ones. A chapter's
+//     DECISION slides are plain bg-bg-primary and stay "follow" — only the
+//     intro card inverts.
 type SlideRailMode = "fixed-dark" | "follow" | "invert";
 const SLIDE_RAIL_MODE: readonly SlideRailMode[] = [
   "fixed-dark",
@@ -126,6 +150,12 @@ const SLIDE_RAIL_MODE: readonly SlideRailMode[] = [
   "follow",
   "follow",
   "invert",
+  "follow",
+  "follow",
+  "invert",
+  "follow",
+  "follow",
+  "follow",
   "follow",
   "follow",
 ];
