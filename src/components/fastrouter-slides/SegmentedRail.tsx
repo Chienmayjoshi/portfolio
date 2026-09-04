@@ -149,8 +149,18 @@ const RAIL_COLORS: Record<
 
 interface SegmentedRailProps {
   activeId: string;
-  /** Progress (0-1) through the active chapter's own slides. Defaults to 1
-   * (fully filled) since every chapter built so far is a single slide. */
+  /** How much of the ACTIVE chapter has been read, 0-1. The rail draws one
+   * tick per chapter, but a chapter can be nine slides long, so without this
+   * the Council tick would read as complete from its first slide to its last
+   * and the reader would get no sense of moving inside it.
+   *
+   * Stepped per slide, not scrubbed against scroll position: a chapter is k/n
+   * filled on its k-th slide, so a one-slide chapter is always exactly 1 (a
+   * section you are standing in and have nothing left to read reads as read),
+   * and every chapter is already full by the time the reader leaves its last
+   * slide — no tick creeps up to full behind them. The step itself is animated
+   * by the segment's own CSS transition. Defaults to 1, the value every
+   * chapter had before chapters could hold more than one slide. */
   fill?: number;
   /** Case-study identity shown in Header.tsx's center pill once activeId
    * moves past "hero". In practice this stays inert until a second
@@ -365,6 +375,10 @@ export default function SegmentedRail({
 
         {CHAPTERS.map((chapter, index) => {
           const isBuilt = BUILT_CHAPTER_IDS.has(chapter.id);
+          // Chapters before the active one are read (full), after it unread
+          // (empty), and the active one fills by `fill` — so a chapter holding
+          // nine slides advances a ninth per slide rather than reading as
+          // complete the moment it opens.
           const segmentFill =
             index < activeIndex ? 1 : index === activeIndex ? fill : 0;
 

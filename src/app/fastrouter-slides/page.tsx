@@ -120,6 +120,19 @@ const SLIDE_CHAPTER_IDS = [
   "evaluations",
   "reflections",
 ] as const;
+// Where each chapter starts in SLIDE_CHAPTER_IDS and how many slides it holds
+// — derived, never hand-maintained, so adding a slide to a chapter re-divides
+// that chapter's rail tick for free. Feeds the rail's `fill` below: the bottom
+// rail draws one tick per CHAPTER, but a chapter can be nine slides long, so
+// without this the Council tick would read as complete from its first slide to
+// its last and the reader would get no sense of moving inside it.
+const CHAPTER_SPANS: Record<string, { start: number; count: number }> = {};
+SLIDE_CHAPTER_IDS.forEach((id, index) => {
+  const span = CHAPTER_SPANS[id];
+  if (span) span.count += 1;
+  else CHAPTER_SPANS[id] = { start: index, count: 1 };
+});
+
 // Parallel array: how each slide's background relates to the global toggle,
 // which decides whether the rail's ticks read light or dark over it.
 //   - "fixed-dark": background doesn't track the toggle at all. Hero's is a
@@ -678,6 +691,13 @@ export default function FastRouterSlidesPage() {
   // "follow" tracks the toggle (dark page → on-dark ticks); "invert" is the
   // opposite (dark page → light slide → on-light ticks); "fixed-dark" is
   // always on-dark (Hero's static illustration).
+  // How far into the active CHAPTER the active slide sits: k/n on the k-th of
+  // n slides. One-slide chapters are a constant 1, and every chapter reaches 1
+  // on its own last slide rather than during the crossing out of it, so no tick
+  // is left creeping up to full after the reader has already moved on.
+  const railSpan = CHAPTER_SPANS[SLIDE_CHAPTER_IDS[activeIndex]];
+  const railFill = (activeIndex - railSpan.start + 1) / railSpan.count;
+
   const railMode = SLIDE_RAIL_MODE[activeIndex];
   const railTheme =
     railMode === "fixed-dark"
@@ -819,6 +839,7 @@ export default function FastRouterSlidesPage() {
 
       <SegmentedRail
         activeId={SLIDE_CHAPTER_IDS[activeIndex]}
+        fill={railFill}
         pillContext={pillContext}
         onNavigate={navigateToChapter}
         theme={railTheme}
