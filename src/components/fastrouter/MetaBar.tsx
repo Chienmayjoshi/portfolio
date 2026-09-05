@@ -18,7 +18,7 @@ const items = [
 
 export default function MetaBar() {
   return (
-    <section className="w-full bg-bg-primary pb-80px">
+    <section data-enter-stage="2" className="w-full bg-bg-primary pb-80px">
       <div className="max-w-[var(--width-content)] mx-auto px-[var(--edge-padding)] md:px-40px">
         <div className="grid grid-cols-2 md:flex gap-x-24px gap-y-0 md:gap-24px items-start border-t border-border-default">
           {items.map((item, i) => (

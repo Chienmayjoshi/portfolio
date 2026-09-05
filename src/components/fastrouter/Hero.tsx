@@ -33,7 +33,10 @@ export default function Hero({ id }: HeroProps) {
   return (
     <section id={id} className="w-full pt-80px">
       <div className="max-w-[var(--width-content)] mx-auto flex flex-col gap-32px items-start px-[var(--edge-padding)] md:px-40px">
-        <div className="flex flex-wrap gap-12px items-center w-full">
+        <div
+          data-enter-stage="1"
+          className="flex flex-wrap gap-12px items-center w-full"
+        >
           <FastRouterLogomark className="shrink-0" />
           <span className="font-ui text-text-muted text-[13px] uppercase tracking-[0.78px]">
             ·
@@ -51,6 +54,7 @@ export default function Hero({ id }: HeroProps) {
 
         <div className="flex flex-col gap-32px items-start w-full">
           <h1
+            data-enter-title
             className="font-display font-bold text-text-primary text-[36px] leading-[42px] tracking-[-0.5px] md:text-[68px] md:leading-[76px] md:tracking-[-1.2px]"
           >
             <span className="block md:whitespace-nowrap">Enterprise AI teams were</span>
@@ -58,7 +62,10 @@ export default function Hero({ id }: HeroProps) {
             <span className="block md:whitespace-nowrap">decision.</span>
           </h1>
 
-          <div className="border-t border-border-default pr-0 md:pr-80px py-24px md:py-40px w-full">
+          <div
+            data-enter-stage="2"
+            className="border-t border-border-default pr-0 md:pr-80px py-24px md:py-40px w-full"
+          >
             <p className="font-ui font-semibold text-text-primary text-[17px] leading-[28px] tracking-[0.085px]">
               I designed three features for FastRouter that gave teams their
               first systematic way to monitor cost, validate model quality,
