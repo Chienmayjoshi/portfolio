@@ -173,6 +173,12 @@ interface CaseStudyEnterProps {
   targetSelector?: string;
   /** Blocks that stage in after the landing, grouped by attribute value. */
   stageSelector?: string;
+  /**
+   * The element that scrolls, when it isn't the document. The slide deck
+   * scrolls an inner container, so locking the body there would lock nothing
+   * and `window.scrollTo` would reset nothing.
+   */
+  scrollerSelector?: string;
   /** Change this to (re)play. 0 / falsy = idle. */
   active: number;
   config?: Partial<CaseStudyEnterConfig>;
@@ -188,6 +194,7 @@ export default function CaseStudyEnter({
   lines,
   targetSelector = "[data-enter-title]",
   stageSelector = "[data-enter-stage]",
+  scrollerSelector,
   active,
   config,
   onFinish,
@@ -227,19 +234,30 @@ export default function CaseStudyEnter({
     let tl: gsap.core.Timeline | null = null;
     let split: SplitText | null = null;
 
-    // Locking scroll removes the scrollbar, which widens the viewport and
-    // would shift every centered element - including the target the words are
-    // flying at. Pad both the document and the fixed overlay by the width the
+    // Scroll lock. Which element scrolls depends on the layout: the vertical
+    // case study scrolls the document, the slide deck scrolls an inner
+    // container. Locking the document only matters for the first - and only
+    // there does it change the viewport width, by removing the scrollbar,
+    // which would shift every centred element including the target the words
+    // are flying at. Pad the document and the fixed overlay by what the
     // scrollbar was taking so nothing moves. 0 on macOS overlay scrollbars.
-    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevBodyPadding = document.body.style.paddingRight;
+    // An inner scroller's own scrollbar is inside the viewport, so nothing
+    // outside it moves and there is nothing to compensate for.
+    const scroller = scrollerSelector
+      ? document.querySelector<HTMLElement>(scrollerSelector)
+      : null;
+    const lockTarget = scroller ?? document.body;
+    const scrollbar = scroller
+      ? 0
+      : window.innerWidth - document.documentElement.clientWidth;
+    const prevOverflow = lockTarget.style.overflow;
+    const prevPadding = lockTarget.style.paddingRight;
 
     const restore = () => {
       gsap.set(overlay, { autoAlpha: 0, clearProps: "paddingRight" });
       gsap.set([target, ...stages], { clearProps: "opacity,transform" });
-      document.body.style.overflow = prevBodyOverflow;
-      document.body.style.paddingRight = prevBodyPadding;
+      lockTarget.style.overflow = prevOverflow;
+      lockTarget.style.paddingRight = prevPadding;
       split?.revert();
       split = null;
     };
@@ -247,10 +265,11 @@ export default function CaseStudyEnter({
     // Hide the landing state before anything paints.
     gsap.set([target, ...stages], { opacity: 0 });
 
-    window.scrollTo(0, 0);
-    document.body.style.overflow = "hidden";
+    if (scroller) scroller.scrollTop = 0;
+    else window.scrollTo(0, 0);
+    lockTarget.style.overflow = "hidden";
     if (scrollbar > 0) {
-      document.body.style.paddingRight = `${scrollbar}px`;
+      lockTarget.style.paddingRight = `${scrollbar}px`;
       gsap.set(overlay, { paddingRight: scrollbar });
     }
 
@@ -473,7 +492,7 @@ export default function CaseStudyEnter({
       restore();
       onTimeline?.(null);
     };
-  }, [active, targetSelector, stageSelector]);
+  }, [active, targetSelector, stageSelector, scrollerSelector]);
 
   return (
     <div
@@ -482,7 +501,12 @@ export default function CaseStudyEnter({
       // Plain divs, not a heading: this is a duplicate of copy that already
       // exists in the page's real <h1>, and it should carry no SEO or a11y
       // weight. bg-bg-primary so it covers the hidden page in both themes.
-      className="fixed inset-0 z-50 flex items-center justify-center bg-bg-primary"
+      //
+      // z-40 sits UNDER the Header (sticky z-50) on purpose - Figma frames 1-3
+      // show the nav present for the whole build, and at z-50 this would win on
+      // DOM order and cover it. Above SegmentedRail (z-20), which should stay
+      // out of the way until the page has landed.
+      className="fixed inset-0 z-40 flex items-center justify-center bg-bg-primary"
       style={{ visibility: "hidden", opacity: 0 }}
     >
       <div

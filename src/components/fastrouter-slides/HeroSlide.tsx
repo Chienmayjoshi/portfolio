@@ -113,7 +113,7 @@ export default function HeroSlide() {
       <div className="relative z-10 mx-auto flex w-full max-w-[1440px] shrink-0 flex-col items-start justify-between gap-0 px-20px pt-40px pb-40px md:flex-row md:gap-40px md:px-80px md:pt-[calc(var(--fr-header-h,0px)+48px)] md:pb-0">
         {/* gap-24 (was gap-40): real mobile value, node 7255:7285. */}
         <div className="flex w-full max-w-[760px] flex-col items-start gap-24px md:gap-40px">
-          <div className="flex flex-wrap items-center gap-12px">
+          <div data-enter-stage="1" className="flex flex-wrap items-center gap-12px">
             <FastRouterLogomark className="shrink-0" />
             <span className="font-ui text-[13px] text-text-muted uppercase tracking-[0.78px]">
               ·
@@ -146,12 +146,18 @@ export default function HeroSlide() {
                 an artifact of headless Chrome's --window-size CLI flag not
                 reliably setting the true CSS viewport at narrow widths,
                 not a layout problem in this component. */}
-            <h1 className="w-full font-display text-text-primary text-slide-title-sm md:text-slide-title">
+            <h1
+              data-enter-title
+              className="w-full font-display text-text-primary text-slide-title-sm md:text-slide-title"
+            >
               Enterprise AI teams were flying blind on every model decision.
             </h1>
 
             {/* py-32 (was py-40): real mobile value, node 7255:7303. */}
-            <div className="w-full border-border-frame border-t py-32px md:py-40px">
+            <div
+              data-enter-stage="2"
+              className="w-full border-border-frame border-t py-32px md:py-40px"
+            >
               <p className="font-ui font-normal text-[17px] text-text-primary leading-[28px] tracking-[0.085px]">
                 I designed three features for FastRouter that gave teams
                 their first systematic way to monitor cost, validate model
@@ -168,7 +174,10 @@ export default function HeroSlide() {
             identical off-grid value. Mobile gap (base gap-24px, node
             7255:7308): flat 24px both axes, measured directly — a real,
             different value from desktop's, not the same rounding case. */}
-        <div className="grid w-full max-w-[400px] grid-cols-2 gap-24px md:w-auto md:gap-x-64px md:gap-y-40px">
+        <div
+          data-enter-stage="2"
+          className="grid w-full max-w-[400px] grid-cols-2 gap-24px md:w-auto md:gap-x-64px md:gap-y-40px"
+        >
           <div className="flex flex-col items-start gap-12px">
             <span className="font-mono font-medium text-[13px] text-text-muted uppercase tracking-[0.78px]">
               Role
@@ -226,6 +235,7 @@ export default function HeroSlide() {
           rebuild, not a 1:1 of Figma, per this file's header), so it's
           tunable, not a verified spec. */}
       <div
+        data-enter-stage="3"
         className="relative min-h-[320px] w-full flex-1 overflow-hidden md:min-h-0"
         aria-hidden="true"
       >
