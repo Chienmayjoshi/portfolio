@@ -146,11 +146,43 @@ export default function HeroSlide() {
                 an artifact of headless Chrome's --window-size CLI flag not
                 reliably setting the true CSS viewport at narrow widths,
                 not a layout problem in this component. */}
+            {/* Explicit desktop line break, added 2026-09-05 by direct
+                instruction, so the entrance animation's title lands on the
+                same three lines it was built on and the snap carries no
+                reflow at all (Figma node 7438:44091, "case study enter
+                animation", frames 1-3).
+
+                Worth recording WHY this needed saying: free-wrapping at
+                48px in this 760px column breaks the sentence
+                "...were flying / blind on every model decision." — two
+                lines, splitting the phrase at "flying". That break was
+                never designed. It's drift from the 56 -> 48px slide-title
+                change (2026-09-04, also a direct instruction, see
+                CLAUDE.md): at Figma's own 56px this column wraps to three
+                lines, and the reduction silently reflowed it to two.
+                Verified by measuring both sizes against the real font in
+                this exact column, not inferred.
+
+                Note the break differs by one word from the live vertical
+                Hero's ("...every model / decision."), which is hard-locked
+                to its own Figma node. That's deliberate: this one follows
+                the enter-animation reference because it's the one the
+                animation lands on.
+
+                md: only. Mobile is a separately designed frame (node
+                7255:7302, 32px in a ~350px column) where desktop's breaks
+                would force a ragged 5 lines; below md the spans stay
+                inline and the sentence reflows to its own spec, which is
+                why each carries a trailing space. Word ORDER is identical
+                either way, so the animation's word pairing holds at every
+                width regardless. */}
             <h1
               data-enter-title
               className="w-full font-display text-text-primary text-slide-title-sm md:text-slide-title"
             >
-              Enterprise AI teams were flying blind on every model decision.
+              <span className="md:block md:whitespace-nowrap">Enterprise AI teams were </span>
+              <span className="md:block md:whitespace-nowrap">flying blind on every </span>
+              <span className="md:block md:whitespace-nowrap">model decision.</span>
             </h1>
 
             {/* py-32 (was py-40): real mobile value, node 7255:7303. */}

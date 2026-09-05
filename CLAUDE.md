@@ -124,6 +124,20 @@ things that follow from that:
   project still carries literal `text-[Npx] leading-[Npx] tracking-[Npx]`
   triples; don't tokenize more of them speculatively.
 
+- The `fastrouter-slides` HeroSlide headline carries an explicit desktop line
+  break (`md:block md:whitespace-nowrap` spans) reading "Enterprise AI teams
+  were / flying blind on every / model decision." Figma's deck node has it as
+  one free-wrapping string. Direct instruction, 2026-09-05: the case study
+  enter animation (node 7438:44091) builds its big title on exactly those three
+  lines, and matching them means the title snaps home with no word changing
+  line. Don't "fix" it back to a single string — free wrapping at 48px in that
+  760px column breaks it "...were flying / blind on every model decision.",
+  which is itself drift from the 56 -> 48px change above, not a design. Note it
+  differs by one word from the live vertical Hero's break, which stays locked to
+  its own Figma node; the deck follows the animation reference because the deck
+  is what the animation lands on. Mobile (node 7255:7302) is untouched — the
+  spans are inline below `md` and reflow to their own spec.
+
 ## Animation — GSAP vs Motion, don't mix on one element
 
 - **Motion** (`import { motion } from "motion/react"` — formerly Framer
