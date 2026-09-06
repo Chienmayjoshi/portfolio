@@ -145,14 +145,21 @@ export interface CaseStudyEnterConfig {
 // 1.22) where the hero is 68/76 (1.12), so the big title is deliberately more
 // loosely leaded. An earlier estimate of 86px came from assuming that ratio
 // held; it doesn't, and 86 overflows the 940 box by 29px.
+// The build values below are TUNED, signed off 2026-09-06 from
+// /lab/case-study-enter — not guesses. Notably charEase is back.out(1.4), so
+// characters overshoot slightly past their resting line and settle back; the
+// 96px leading over 78.5px type absorbs the overshoot inside the line's mask.
+// charBlur only applies to the blur-fade reveal and is inert at the mask-up
+// default; it's kept so switching reveal styles in the lab starts somewhere
+// sensible.
 export const ENTER_DEFAULTS: CaseStudyEnterConfig = {
   revealStyle: "mask-up",
-  charDuration: 0.62,
-  charStagger: 0.018,
-  charEase: "power3.out",
-  charShift: 105,
-  charBlur: 6,
-  hold: 0.18,
+  charDuration: 0.72,
+  charStagger: 0.036,
+  charEase: "back.out(1.4)",
+  charShift: 85,
+  charBlur: 8,
+  hold: 0.3,
   pairing: "words",
   flipDuration: 0.72,
   flipEase: "power3.inOut",
