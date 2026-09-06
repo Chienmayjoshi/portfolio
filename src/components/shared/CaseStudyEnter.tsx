@@ -308,6 +308,46 @@ export default function CaseStudyEnter({
       }
       if (cancelled) return;
 
+      // ...and then wait for the page under us to stop moving. Fonts being
+      // ready is not the same as the layout being final: the page this lands
+      // on is still running its own mount effects, and any of them that change
+      // layout move the target after we'd have measured it.
+      //
+      // This is not hypothetical. The slide deck initialises its header height
+      // to a 64px fallback and then measures the real header at 74px, which
+      // feeds a marginTop that pulls the whole deck up by the 10px difference.
+      // Measuring before that landed sent every word exactly 10px too low.
+      //
+      // It only bit on the real navigation, which is worth remembering: a full
+      // page load resolves fonts.ready LATE, after those effects, so the race
+      // was already won. A card click is a client-side navigation with the
+      // fonts cached, so fonts.ready resolves immediately and measurement got
+      // there first. The lab, always entered by URL, never saw it.
+      //
+      // setTimeout rather than rAF so this still runs in a backgrounded tab,
+      // where rAF is frozen and this would otherwise hang forever.
+      const settled = await (async () => {
+        let previous = target.getBoundingClientRect();
+        const deadline = performance.now() + 400;
+        while (performance.now() < deadline) {
+          await new Promise((resolve) => setTimeout(resolve, 16));
+          if (cancelled) return false;
+          const next = target.getBoundingClientRect();
+          if (
+            Math.abs(next.top - previous.top) < 0.5 &&
+            Math.abs(next.left - previous.left) < 0.5 &&
+            Math.abs(next.width - previous.width) < 0.5
+          ) {
+            return true;
+          }
+          previous = next;
+        }
+        // Something is animating the target continuously. Measure anyway - a
+        // slightly-off landing beats never playing.
+        return true;
+      })();
+      if (!settled || cancelled) return;
+
       // Overlay type. Applied imperatively rather than as JSX style so that
       // config lives in a ref (see above) and the overlay never re-renders
       // while SplitText owns its children.

@@ -744,6 +744,16 @@ export default function FastRouterSlidesPage() {
         lines={FASTROUTER_ENTER_LINES}
         scrollerSelector="[data-enter-scroller]"
         active={enterActive}
+        onTimeline={
+          process.env.NODE_ENV === "development"
+            ? (tl) => {
+                // Dev-only handle so the entrance can be scrubbed on the real
+                // route, not just in the lab. Stripped from production builds.
+                (window as unknown as Record<string, unknown>).__enterTimeline =
+                  tl;
+              }
+            : undefined
+        }
       />
 
       {isTouch ? (
