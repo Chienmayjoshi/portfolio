@@ -1,4 +1,4 @@
-import Link from "next/link";
+import ArmEnterLink from "@/components/shared/ArmEnterLink";
 
 // Shared card used by every case study's ReadNext.tsx (teaser row) and the
 // temporary project-index page (src/app/page.tsx, grid). Extracted from the
@@ -22,7 +22,7 @@ export default function ProjectCard({
   href,
 }: ProjectCardData) {
   return (
-    <Link
+    <ArmEnterLink
       href={href}
       className="flex-1 bg-bg-surface border border-bg-light rounded-xl p-32px flex flex-col gap-12px transition-colors hover:border-border-default"
     >
@@ -43,6 +43,6 @@ export default function ProjectCard({
       <p className="font-ui font-normal text-text-muted text-[16px] leading-[28px] tracking-[0.08px]">
         {description}
       </p>
-    </Link>
+    </ArmEnterLink>
   );
 }
