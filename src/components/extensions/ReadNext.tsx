@@ -12,7 +12,13 @@ const cards = [
     title: "Enterprise AI teams were flying blind on every model decision.",
     description:
       "No existing pattern, 4 weeks, one novel architecture that the industry validated 6 months later.",
-    href: "/fastrouter",
+    // The deck, not the vertical /fastrouter route: direct instruction
+    // 2026-09-06, every entry into this case study lands on the slide format.
+    // /fastrouter still exists and still works by direct URL — it just isn't
+    // linked from a card any more. Change all three call sites together
+    // (src/app/page.tsx and both ReadNext.tsx) or entering the same case study
+    // from the homepage and from a teaser gives you two different formats.
+    href: "/fastrouter-slides",
   },
   {
     category: "analytics",
