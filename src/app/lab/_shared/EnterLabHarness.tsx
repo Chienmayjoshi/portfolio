@@ -6,6 +6,7 @@ import CaseStudyEnter, {
   ENTER_DEFAULTS,
   type CaseStudyEnterConfig,
 } from "@/components/shared/CaseStudyEnter";
+import type { EnterTitleLines } from "@/components/shared/caseStudyEnterLines";
 
 // Shared tuning harness behind both /lab/case-study-enter routes: the overlay,
 // a Replay button, a live control panel, and a scrubber. `children` is whatever
@@ -15,8 +16,8 @@ import CaseStudyEnter, {
 // Temporary. Deleting src/app/lab/ removes this and both routes; only
 // CaseStudyEnter itself ships.
 interface EnterLabHarnessProps {
-  /** Overlay copy, one string per line. */
-  lines: string[];
+  /** Overlay copy, per breakpoint. */
+  lines: EnterTitleLines;
   /** For layouts that scroll an inner element (the deck) rather than the page. */
   scrollerSelector?: string;
   /** The page under the overlay - the snap target lives in here. */

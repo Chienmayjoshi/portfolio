@@ -4,7 +4,7 @@ import EnterLabHarness from "@/app/lab/_shared/EnterLabHarness";
 import Hero from "@/components/fastrouter/Hero";
 import MetaBar from "@/components/fastrouter/MetaBar";
 import CockpitPlaceholder from "@/components/fastrouter/CockpitPlaceholder";
-import { OVERLAY_LINES } from "@/app/lab/_shared/overlayLines";
+import { FASTROUTER_ENTER_LINES } from "@/components/shared/caseStudyEnterLines";
 
 // Tuning harness for the entrance onto the VERTICAL case study (/fastrouter).
 // The slide-deck version is the sibling route, /lab/case-study-enter-slides.
@@ -14,7 +14,7 @@ import { OVERLAY_LINES } from "@/app/lab/_shared/overlayLines";
 // dialled in. Delete src/app/lab/ when it moves onto the real flow.
 export default function CaseStudyEnterLab() {
   return (
-    <EnterLabHarness lines={OVERLAY_LINES}>
+    <EnterLabHarness lines={FASTROUTER_ENTER_LINES}>
       {/* Same column shape as src/app/fastrouter/page.tsx so the target lands
           at exactly the coordinates it will on the real page. Verified: the
           landed <h1> matches a direct /fastrouter load to 0.00px. */}

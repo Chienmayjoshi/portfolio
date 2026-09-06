@@ -2,7 +2,7 @@
 
 import EnterLabHarness from "@/app/lab/_shared/EnterLabHarness";
 import FastRouterSlides from "@/app/fastrouter-slides/page";
-import { OVERLAY_LINES } from "@/app/lab/_shared/overlayLines";
+import { FASTROUTER_ENTER_LINES } from "@/components/shared/caseStudyEnterLines";
 
 // Tuning harness for the entrance onto the SLIDE DECK (/fastrouter-slides).
 // Sibling of /lab/case-study-enter, which does the vertical route.
@@ -23,7 +23,7 @@ import { OVERLAY_LINES } from "@/app/lab/_shared/overlayLines";
 export default function CaseStudyEnterSlidesLab() {
   return (
     <EnterLabHarness
-      lines={OVERLAY_LINES}
+      lines={FASTROUTER_ENTER_LINES}
       scrollerSelector="[data-enter-scroller]"
     >
       <FastRouterSlides />

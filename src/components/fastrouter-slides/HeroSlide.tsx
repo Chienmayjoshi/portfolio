@@ -146,43 +146,55 @@ export default function HeroSlide() {
                 an artifact of headless Chrome's --window-size CLI flag not
                 reliably setting the true CSS viewport at narrow widths,
                 not a layout problem in this component. */}
-            {/* Explicit desktop line break, added 2026-09-05 by direct
-                instruction, so the entrance animation's title lands on the
-                same three lines it was built on and the snap carries no
-                reflow at all (Figma node 7438:44091, "case study enter
-                animation", frames 1-3).
+            {/* Line layout is DEFINED per breakpoint, not left to whatever
+                the column width produces - see
+                src/components/shared/caseStudyEnterLines.ts, which holds the
+                canonical arrangement and the measurements behind it. Keep this
+                markup and that file in step.
 
-                Worth recording WHY this needed saying: free-wrapping at
-                48px in this 760px column breaks the sentence
-                "...were flying / blind on every model decision." — two
-                lines, splitting the phrase at "flying". That break was
-                never designed. It's drift from the 56 -> 48px slide-title
-                change (2026-09-04, also a direct instruction, see
-                CLAUDE.md): at Figma's own 56px this column wraps to three
-                lines, and the reduction silently reflowed it to two.
-                Verified by measuring both sizes against the real font in
-                this exact column, not inferred.
+                  below md:  Enterprise AI teams / were flying blind on /
+                             every model decision.
+                  md and up: Enterprise AI teams were / flying blind on every /
+                             model decision.
 
-                Note the break differs by one word from the live vertical
-                Hero's ("...every model / decision."), which is hard-locked
-                to its own Figma node. That's deliberate: this one follows
-                the enter-animation reference because it's the one the
-                animation lands on.
+                Why it's pinned (direct instruction, 2026-09-05/06): the case
+                study enter animation (Figma node 7438:44091) builds its big
+                title on these exact lines and then flies the words onto this
+                <h1>, so the two have to agree at every width. And free
+                wrapping at 48px in this 760px column produced "...were flying
+                / blind on every model decision." - a two-line break splitting
+                the phrase at "flying" that was never designed. It was drift
+                from the 56 -> 48px slide-title change (2026-09-04): Figma's own
+                56px wraps this column to three lines, and the reduction
+                silently reflowed it to two. Measured, not inferred.
 
-                md: only. Mobile is a separately designed frame (node
-                7255:7302, 32px in a ~350px column) where desktop's breaks
-                would force a ragged 5 lines; below md the spans stay
-                inline and the sentence reflows to its own spec, which is
-                why each carries a trailing space. Word ORDER is identical
-                either way, so the animation's word pairing holds at every
-                width regardless. */}
+                The md set differs by one word from the live vertical Hero's
+                ("...every model / decision."), which stays locked to its own
+                Figma node. Deliberate - this one follows the animation
+                reference because this is what the animation lands on.
+
+                Done with toggled <br>s rather than duplicated spans so the
+                sentence exists once: display:none on a <br> suppresses its
+                break, so exactly one pair is live at any width. That keeps a
+                single copy of the headline in the document (no duplicate h1
+                text for screen readers or crawlers) and keeps word ORDER
+                identical at every width, which is the only thing the
+                animation's index pairing depends on. The {" "} separators
+                matter: they're what keeps the words apart when the <br>
+                between them is the hidden one. */}
             <h1
               data-enter-title
               className="w-full font-display text-text-primary text-slide-title-sm md:text-slide-title"
             >
-              <span className="md:block md:whitespace-nowrap">Enterprise AI teams were </span>
-              <span className="md:block md:whitespace-nowrap">flying blind on every </span>
-              <span className="md:block md:whitespace-nowrap">model decision.</span>
+              Enterprise AI teams
+              <br className="md:hidden" />{" "}
+              were
+              <br className="hidden md:inline" />{" "}
+              flying blind on
+              <br className="md:hidden" />{" "}
+              every
+              <br className="hidden md:inline" />{" "}
+              model decision.
             </h1>
 
             {/* py-32 (was py-40): real mobile value, node 7255:7303. */}

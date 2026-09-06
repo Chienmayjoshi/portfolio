@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { SplitText } from "gsap/SplitText";
+import type { EnterTitleLines } from "@/components/shared/caseStudyEnterLines";
 
 // Case study entrance: a large centered headline builds letter-by-letter, then
 // its words fly into the real <h1> on the page while the rest of the intro
@@ -167,8 +168,11 @@ export const ENTER_DEFAULTS: CaseStudyEnterConfig = {
 };
 
 interface CaseStudyEnterProps {
-  /** Overlay copy, one string per line. Figma's wrap, not the hero's. */
-  lines: string[];
+  /**
+   * Overlay copy, one array of lines per breakpoint. Both are rendered and CSS
+   * decides which is visible; the timeline animates whichever one that is.
+   */
+  lines: EnterTitleLines;
   /** The real <h1> the words land on. */
   targetSelector?: string;
   /** Blocks that stage in after the landing, grouped by attribute value. */
@@ -224,9 +228,12 @@ export default function CaseStudyEnter({
     const stages = Array.from(
       document.querySelectorAll<HTMLElement>(stageSelector)
     );
+    // Both breakpoint sets are in the DOM; only one has boxes. Animate that
+    // one - `md` and `base` differ in where they break, so splitting the
+    // display:none set would measure zeroes and fling every word to 0,0.
     const lineEls = Array.from(
       overlay.querySelectorAll<HTMLElement>("[data-enter-overlay-line]")
-    );
+    ).filter((el) => el.getClientRects().length > 0);
     const box = overlay.querySelector<HTMLElement>("[data-enter-overlay-box]");
     if (!box || lineEls.length === 0) return;
 
@@ -256,6 +263,7 @@ export default function CaseStudyEnter({
     const restore = () => {
       gsap.set(overlay, { autoAlpha: 0, clearProps: "paddingRight" });
       gsap.set([target, ...stages], { clearProps: "opacity,transform" });
+      gsap.set(lineEls, { clearProps: "overflow,whiteSpace" });
       lockTarget.style.overflow = prevOverflow;
       lockTarget.style.paddingRight = prevPadding;
       split?.revert();
@@ -295,21 +303,37 @@ export default function CaseStudyEnter({
 
       // Overlay type. Applied imperatively rather than as JSX style so that
       // config lives in a ref (see above) and the overlay never re-renders
-      // while SplitText owns its children. Below ~1000px the box and font
-      // shrink together, which keeps Figma's three-line wrap intact at every
-      // width - and the wrap is what makes word pairing stable.
+      // while SplitText owns its children.
+      //
+      // The lines are nowrap and the font is then sized so the widest of them
+      // fits the box - so the arrangement in caseStudyEnterLines.ts is what
+      // renders, at every width, exactly. An earlier version scaled the font by
+      // the box's own shrink with a 28px floor, which is not the same thing:
+      // once the floor engaged the type stopped shrinking, the widest line no
+      // longer fit, and it wrapped - putting "were" alone on its own line and
+      // turning a designed three-line title into a ragged four.
       const boxWidth = Math.min(
         cfg.boxWidth,
         document.documentElement.clientWidth - 48
       );
-      const shrink = boxWidth / cfg.boxWidth;
-      const fontSize = Math.max(28, cfg.fontSize * shrink);
-      const lineHeight = cfg.lineHeight * (fontSize / cfg.fontSize);
+      gsap.set(lineEls, { whiteSpace: "nowrap" });
+      gsap.set(box, {
+        width: "max-content",
+        fontSize: cfg.fontSize,
+        lineHeight: `${cfg.lineHeight}px`,
+        letterSpacing: `${TRACKING_EM}em`,
+      });
+      // max-content first so each line reports its true unwrapped width.
+      const widest = Math.max(
+        ...lineEls.map((el) => el.getBoundingClientRect().width)
+      );
+      const fit = widest > 0 ? Math.min(1, boxWidth / widest) : 1;
+      const fontSize = cfg.fontSize * fit;
+      const lineHeight = cfg.lineHeight * fit;
       gsap.set(box, {
         width: boxWidth,
         fontSize,
         lineHeight: `${lineHeight}px`,
-        letterSpacing: `${TRACKING_EM}em`,
       });
       gsap.set(overlay, { autoAlpha: 1 });
 
@@ -513,11 +537,24 @@ export default function CaseStudyEnter({
         data-enter-overlay-box
         className="font-display text-text-primary"
       >
-        {lines.map((line) => (
-          <div key={line} data-enter-overlay-line>
-            {line}
-          </div>
-        ))}
+        {/* Both breakpoint sets render; CSS picks one, the effect animates
+            whichever it finds boxes for. Duplicating the sentence costs
+            nothing here - the whole layer is aria-hidden and the real <h1>
+            carries the one copy that counts. */}
+        <div className="md:hidden">
+          {lines.base.map((line) => (
+            <div key={line} data-enter-overlay-line>
+              {line}
+            </div>
+          ))}
+        </div>
+        <div className="hidden md:block">
+          {lines.md.map((line) => (
+            <div key={line} data-enter-overlay-line>
+              {line}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
