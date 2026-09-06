@@ -25,7 +25,10 @@
 // mobile ref.
 export default function CockpitPlaceholder() {
   return (
-    <section className="w-full bg-bg-surface flex flex-col items-center">
+    <section
+      data-enter-stage="3"
+      className="w-full bg-bg-surface flex flex-col items-center"
+    >
       <div className="w-full h-[220px] md:h-[480px] bg-bg-light flex items-center justify-center px-[var(--edge-padding)]">
         <p
           className="font-ui font-normal italic text-text-muted text-[14px] leading-[21px] text-center md:whitespace-nowrap"

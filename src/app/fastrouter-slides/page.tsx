@@ -746,6 +746,10 @@ export default function FastRouterSlidesPage() {
         <div
           ref={scrollRef}
           tabIndex={-1}
+          // Marked so the entrance animation (CaseStudyEnter) can find the
+          // thing that actually scrolls here - it's this container, not the
+          // document, so a body-level lock would hold nothing.
+          data-enter-scroller
           className="relative w-full snap-y snap-mandatory overflow-y-auto overscroll-contain outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           // The deck fills the whole viewport and is pulled UP behind the
           // sticky Header (marginTop: -headerHeight), so each full-height slide

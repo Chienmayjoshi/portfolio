@@ -113,7 +113,7 @@ export default function HeroSlide() {
       <div className="relative z-10 mx-auto flex w-full max-w-[1440px] shrink-0 flex-col items-start justify-between gap-0 px-20px pt-40px pb-40px md:flex-row md:gap-40px md:px-80px md:pt-[calc(var(--fr-header-h,0px)+48px)] md:pb-0">
         {/* gap-24 (was gap-40): real mobile value, node 7255:7285. */}
         <div className="flex w-full max-w-[760px] flex-col items-start gap-24px md:gap-40px">
-          <div className="flex flex-wrap items-center gap-12px">
+          <div data-enter-stage="1" className="flex flex-wrap items-center gap-12px">
             <FastRouterLogomark className="shrink-0" />
             <span className="font-ui text-[13px] text-text-muted uppercase tracking-[0.78px]">
               ·
@@ -146,12 +146,62 @@ export default function HeroSlide() {
                 an artifact of headless Chrome's --window-size CLI flag not
                 reliably setting the true CSS viewport at narrow widths,
                 not a layout problem in this component. */}
-            <h1 className="w-full font-display text-text-primary text-slide-title-sm md:text-slide-title">
-              Enterprise AI teams were flying blind on every model decision.
+            {/* Line layout is DEFINED per breakpoint, not left to whatever
+                the column width produces - see
+                src/components/shared/caseStudyEnterLines.ts, which holds the
+                canonical arrangement and the measurements behind it. Keep this
+                markup and that file in step.
+
+                  below md:  Enterprise AI teams / were flying blind on /
+                             every model decision.
+                  md and up: Enterprise AI teams were / flying blind on every /
+                             model decision.
+
+                Why it's pinned (direct instruction, 2026-09-05/06): the case
+                study enter animation (Figma node 7438:44091) builds its big
+                title on these exact lines and then flies the words onto this
+                <h1>, so the two have to agree at every width. And free
+                wrapping at 48px in this 760px column produced "...were flying
+                / blind on every model decision." - a two-line break splitting
+                the phrase at "flying" that was never designed. It was drift
+                from the 56 -> 48px slide-title change (2026-09-04): Figma's own
+                56px wraps this column to three lines, and the reduction
+                silently reflowed it to two. Measured, not inferred.
+
+                The md set differs by one word from the live vertical Hero's
+                ("...every model / decision."), which stays locked to its own
+                Figma node. Deliberate - this one follows the animation
+                reference because this is what the animation lands on.
+
+                Done with toggled <br>s rather than duplicated spans so the
+                sentence exists once: display:none on a <br> suppresses its
+                break, so exactly one pair is live at any width. That keeps a
+                single copy of the headline in the document (no duplicate h1
+                text for screen readers or crawlers) and keeps word ORDER
+                identical at every width, which is the only thing the
+                animation's index pairing depends on. The {" "} separators
+                matter: they're what keeps the words apart when the <br>
+                between them is the hidden one. */}
+            <h1
+              data-enter-title
+              className="w-full font-display text-text-primary text-slide-title-sm md:text-slide-title"
+            >
+              Enterprise AI teams
+              <br className="md:hidden" />{" "}
+              were
+              <br className="hidden md:inline" />{" "}
+              flying blind on
+              <br className="md:hidden" />{" "}
+              every
+              <br className="hidden md:inline" />{" "}
+              model decision.
             </h1>
 
             {/* py-32 (was py-40): real mobile value, node 7255:7303. */}
-            <div className="w-full border-border-frame border-t py-32px md:py-40px">
+            <div
+              data-enter-stage="2"
+              className="w-full border-border-frame border-t py-32px md:py-40px"
+            >
               <p className="font-ui font-normal text-[17px] text-text-primary leading-[28px] tracking-[0.085px]">
                 I designed three features for FastRouter that gave teams
                 their first systematic way to monitor cost, validate model
@@ -168,7 +218,10 @@ export default function HeroSlide() {
             identical off-grid value. Mobile gap (base gap-24px, node
             7255:7308): flat 24px both axes, measured directly — a real,
             different value from desktop's, not the same rounding case. */}
-        <div className="grid w-full max-w-[400px] grid-cols-2 gap-24px md:w-auto md:gap-x-64px md:gap-y-40px">
+        <div
+          data-enter-stage="2"
+          className="grid w-full max-w-[400px] grid-cols-2 gap-24px md:w-auto md:gap-x-64px md:gap-y-40px"
+        >
           <div className="flex flex-col items-start gap-12px">
             <span className="font-mono font-medium text-[13px] text-text-muted uppercase tracking-[0.78px]">
               Role
@@ -226,6 +279,7 @@ export default function HeroSlide() {
           rebuild, not a 1:1 of Figma, per this file's header), so it's
           tunable, not a verified spec. */}
       <div
+        data-enter-stage="3"
         className="relative min-h-[320px] w-full flex-1 overflow-hidden md:min-h-0"
         aria-hidden="true"
       >

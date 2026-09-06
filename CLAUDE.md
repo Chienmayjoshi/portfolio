@@ -124,6 +124,28 @@ things that follow from that:
   project still carries literal `text-[Npx] leading-[Npx] tracking-[Npx]`
   triples; don't tokenize more of them speculatively.
 
+- The `fastrouter-slides` HeroSlide headline has a DEFINED line layout per
+  breakpoint rather than a free wrap, expressed as toggled `<br>` elements
+  (display:none suppresses a break, so exactly one pair is live at any width —
+  and the sentence stays in the document once, no duplicate h1 text). The
+  canonical arrangement and the measurements behind it live in
+  `src/components/shared/caseStudyEnterLines.ts`; keep that file and the markup
+  in step. Figma's deck node has it as one free-wrapping string.
+
+  Direct instruction, 2026-09-05/06. Two reasons. The case study enter
+  animation (node 7438:44091) builds its big title on the `md` lines and flies
+  the words onto this `<h1>`, so the two must agree at every width. And the free
+  wrap was itself drift: at 48px in that 760px column it broke "...were flying /
+  blind on every model decision.", splitting the phrase at "flying" — a
+  side effect of the 56 -> 48px change above, since Figma's own 56px wraps that
+  column to three lines. Measured against the real face, not inferred.
+
+  One set cannot serve every width: the desktop arrangement's widest line is
+  366px at the deck's mobile 32px, against the 350px a 390px phone offers.
+  Hence two sets, split on `md`. The `md` set differs by one word from the live
+  vertical Hero's, which stays locked to its own Figma node — deliberate, the
+  deck follows the animation reference because the deck is what it lands on.
+
 ## Animation — GSAP vs Motion, don't mix on one element
 
 - **Motion** (`import { motion } from "motion/react"` — formerly Framer
