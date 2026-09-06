@@ -228,13 +228,21 @@ export default function CaseStudyEnter({
     if (!active) return;
 
     const overlay = overlayRef.current;
-    const target = document.querySelector<HTMLElement>(targetSelector);
+    const findTarget = () =>
+      document.querySelector<HTMLElement>(targetSelector);
+    const findStages = () =>
+      Array.from(document.querySelectorAll<HTMLElement>(stageSelector));
+
+    // Everything found here is re-resolved once the layout settles (see
+    // below). The page being landed on can replace this DOM wholesale after
+    // mount - the deck swaps its entire slide structure for a touch-specific
+    // one the moment it detects a coarse pointer - and a detached node
+    // measures as all zeroes without erroring.
+    let target = findTarget();
     if (!overlay || !target) return;
 
     const cfg: CaseStudyEnterConfig = { ...ENTER_DEFAULTS, ...config };
-    const stages = Array.from(
-      document.querySelectorAll<HTMLElement>(stageSelector)
-    );
+    let stages = findStages();
     // Both breakpoint sets are in the DOM; only one has boxes. Animate that
     // one - `md` and `base` differ in where they break, so splitting the
     // display:none set would measure zeroes and fling every word to 0,0.
@@ -257,36 +265,72 @@ export default function CaseStudyEnter({
     // scrollbar was taking so nothing moves. 0 on macOS overlay scrollbars.
     // An inner scroller's own scrollbar is inside the viewport, so nothing
     // outside it moves and there is nothing to compensate for.
-    const scroller = scrollerSelector
-      ? document.querySelector<HTMLElement>(scrollerSelector)
-      : null;
-    const lockTarget = scroller ?? document.body;
-    const scrollbar = scroller
-      ? 0
-      : window.innerWidth - document.documentElement.clientWidth;
-    const prevOverflow = lockTarget.style.overflow;
-    const prevPadding = lockTarget.style.paddingRight;
+    let lockTarget: HTMLElement | null = null;
+    let prevOverflow = "";
+    let prevPadding = "";
+
+    const unlock = () => {
+      if (!lockTarget) return;
+      lockTarget.style.overflow = prevOverflow;
+      lockTarget.style.paddingRight = prevPadding;
+      lockTarget = null;
+    };
+
+    /** Reset to the top and hold it there, on whatever currently scrolls. */
+    const lock = () => {
+      const scroller = scrollerSelector
+        ? document.querySelector<HTMLElement>(scrollerSelector)
+        : null;
+      const next = scroller ?? document.body;
+      if (next === lockTarget) return;
+      unlock();
+      lockTarget = next;
+      prevOverflow = next.style.overflow;
+      prevPadding = next.style.paddingRight;
+      if (scroller) scroller.scrollTop = 0;
+      else window.scrollTo(0, 0);
+      next.style.overflow = "hidden";
+      // Locking the document removes its scrollbar, which widens the viewport
+      // and would shift every centred element - including the target the words
+      // are flying at. Pad the document and the fixed overlay by what the
+      // scrollbar was taking so nothing moves. 0 on macOS overlay scrollbars,
+      // and 0 for an inner scroller, whose scrollbar is inside the viewport so
+      // nothing outside it moves.
+      const scrollbar = scroller
+        ? 0
+        : window.innerWidth - document.documentElement.clientWidth;
+      if (scrollbar > 0) {
+        next.style.paddingRight = `${scrollbar}px`;
+        gsap.set(overlay, { paddingRight: scrollbar });
+      }
+    };
+
+    /** Hide the landing state, on whichever nodes are currently mounted. */
+    const hideLandingState = () => {
+      gsap.set([target, ...stages].filter(Boolean), { opacity: 0 });
+    };
 
     const restore = () => {
       gsap.set(overlay, { autoAlpha: 0, clearProps: "paddingRight" });
-      gsap.set([target, ...stages], { clearProps: "opacity,transform" });
+      gsap.set(box, { clearProps: "visibility,opacity" });
+      gsap.set([target, ...stages].filter(Boolean), {
+        clearProps: "opacity,transform",
+      });
       gsap.set(lineEls, { clearProps: "overflow,whiteSpace" });
-      lockTarget.style.overflow = prevOverflow;
-      lockTarget.style.paddingRight = prevPadding;
+      unlock();
       split?.revert();
       split = null;
     };
 
-    // Hide the landing state before anything paints.
-    gsap.set([target, ...stages], { opacity: 0 });
-
-    if (scroller) scroller.scrollTop = 0;
-    else window.scrollTo(0, 0);
-    lockTarget.style.overflow = "hidden";
-    if (scrollbar > 0) {
-      lockTarget.style.paddingRight = `${scrollbar}px`;
-      gsap.set(overlay, { paddingRight: scrollbar });
-    }
+    // Before anything paints: hide the landing state, take the scroll, and put
+    // the overlay's plate up. The plate goes up NOW rather than after
+    // measuring, so that whatever the page does to itself while we wait for it
+    // to settle happens behind a cover. Its text stays hidden until it has
+    // been sized and split.
+    hideLandingState();
+    lock();
+    gsap.set(box, { autoAlpha: 0 });
+    gsap.set(overlay, { autoAlpha: 1 });
 
     // Reduced motion: hard cut. Same call as the deck's dissolve
     // (fastrouter-slides/page.tsx) - this is ornament over a navigation that
@@ -326,27 +370,45 @@ export default function CaseStudyEnter({
       //
       // setTimeout rather than rAF so this still runs in a backgrounded tab,
       // where rAF is frozen and this would otherwise hang forever.
-      const settled = await (async () => {
-        let previous = target.getBoundingClientRect();
-        const deadline = performance.now() + 400;
+      // It re-queries the selector each pass rather than watching the node it
+      // started with, and requires the SAME node to hold still. That is what
+      // catches a swap: a detached element reports all zeroes rather than
+      // throwing, so watching one would look perfectly "settled" while the
+      // real target lives somewhere else entirely.
+      const settledTarget = await (async () => {
+        let node = target;
+        let previous = node!.getBoundingClientRect();
+        const deadline = performance.now() + 600;
         while (performance.now() < deadline) {
           await new Promise((resolve) => setTimeout(resolve, 16));
-          if (cancelled) return false;
-          const next = target.getBoundingClientRect();
+          if (cancelled) return null;
+          const current = findTarget();
+          if (!current) continue; // mid-swap; look again next pass
+          const next = current.getBoundingClientRect();
           if (
+            current === node &&
             Math.abs(next.top - previous.top) < 0.5 &&
             Math.abs(next.left - previous.left) < 0.5 &&
             Math.abs(next.width - previous.width) < 0.5
           ) {
-            return true;
+            return current;
           }
+          node = current;
           previous = next;
         }
-        // Something is animating the target continuously. Measure anyway - a
+        // Something is moving the target continuously. Measure anyway - a
         // slightly-off landing beats never playing.
-        return true;
+        return findTarget();
       })();
-      if (!settled || cancelled) return;
+      if (!settledTarget || cancelled) return;
+
+      // Re-bind to whatever survived, and re-apply to it. The nodes hidden and
+      // the scroller locked before the wait may both be detached by now; the
+      // ones on screen are these.
+      target = settledTarget;
+      stages = findStages();
+      hideLandingState();
+      lock();
 
       // Overlay type. Applied imperatively rather than as JSX style so that
       // config lives in a ref (see above) and the overlay never re-renders
@@ -528,6 +590,11 @@ export default function CaseStudyEnter({
         snapAt + cfg.flipDuration + (movers.length - 1) * cfg.flipLead;
       tl.set(target, { opacity: 1 }, flipEnd);
       tl.to(overlay, { autoAlpha: 0, duration: cfg.handoff }, flipEnd);
+
+      // Safe to show the text now: every from() above has already applied its
+      // start state, so the characters are sitting below their masks rather
+      // than spelling the sentence out in full.
+      gsap.set(box, { autoAlpha: 1 });
 
       // (e) the rest of the intro, grouped by data-enter-stage value.
       const groups = new Map<string, HTMLElement[]>();

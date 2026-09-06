@@ -834,10 +834,24 @@ export default function FastRouterSlidesPage() {
                   style props, so an activeIndex re-render can't clobber them
                   mid-transition (the same rule the old row transform followed).
 
-                  z-index is the one thing set declaratively, because it never
-                  changes: a later slide always stacks above an earlier one, so
-                  the incoming slide is the one carrying the mask and the
-                  outgoing one simply shows through it. It also means no
+                  z-index and the INITIAL visibility are the two things set
+                  declaratively, because neither changes across renders — React
+                  writes a style prop once and then only on a diff, so sync()'s
+                  imperative writes survive.
+
+                  Initial visibility exists to stop a flash of the LAST slide
+                  before hydration. Every slide is `absolute inset-0`, so with
+                  nothing but z-index in the server HTML they all paint on top
+                  of each other and the highest z-index — slide 22 — is what
+                  shows. sync() only fixes that once JS has run, which is why
+                  the deck flashed its final slide and then "loaded from the
+                  start" on every reload. Rendering slide 1 visible and the
+                  rest hidden makes the pre-JS paint already correct.
+
+                  z-index itself never changes: a later slide always stacks
+                  above an earlier one, so the incoming slide is the one
+                  carrying the mask and the outgoing one simply shows through
+                  it. It also means no
                   backdrop layer is needed — an earlier attempt had to mirror
                   every slide's background behind the mask because a masked
                   slide revealed the page instead of its neighbour. Stacked,
@@ -854,7 +868,10 @@ export default function FastRouterSlidesPage() {
                         slideRefs.current[index] = el;
                       }}
                       className="absolute inset-0 h-full w-full"
-                      style={{ zIndex: index }}
+                      style={{
+                        zIndex: index,
+                        visibility: index === 0 ? "visible" : "hidden",
+                      }}
                     >
                       <Slide />
                     </div>
