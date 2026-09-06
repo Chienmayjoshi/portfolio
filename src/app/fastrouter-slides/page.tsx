@@ -5,6 +5,12 @@ import { gsap } from "gsap";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import FastRouterLogomark from "@/components/fastrouter/FastRouterLogomark";
 import SegmentedRail from "@/components/fastrouter-slides/SegmentedRail";
+import CaseStudyEnter from "@/components/shared/CaseStudyEnter";
+import { FASTROUTER_ENTER_LINES } from "@/components/shared/caseStudyEnterLines";
+import {
+  clearCaseStudyEnter,
+  peekCaseStudyEnter,
+} from "@/components/shared/caseStudyEnterArming";
 import HeroSlide from "@/components/fastrouter-slides/HeroSlide";
 import ProblemSlide from "@/components/fastrouter-slides/ProblemSlide";
 import ProductSlide from "@/components/fastrouter-slides/ProductSlide";
@@ -241,10 +247,23 @@ gsap.registerPlugin(ScrollToPlugin);
 // Split on input type so a wide-but-touch device (landscape phone, tablet)
 // still gets the vertical experience; the same signal is passed to
 // SegmentedRail so its rail-vs-pill choice can't disagree with this branch.
+// This route's own path, for matching against what a card armed.
+const ENTER_PATHNAME = "/fastrouter-slides";
+
 export default function FastRouterSlidesPage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(HEADER_HEIGHT_FALLBACK_PX);
   const [isTouch, setIsTouch] = useState(false);
+  // Whether this mount was reached by clicking a project card, which is the
+  // only thing that plays the entrance. Read in the initializer rather than an
+  // effect so it's already decided by the time CaseStudyEnter's layout effect
+  // runs — that effect hides the landing state, and it has to happen in the
+  // same frame the page first paints. Clearing is a separate effect so this
+  // stays a pure read (see caseStudyEnterArming.ts).
+  const [enterActive] = useState(() =>
+    peekCaseStudyEnter(ENTER_PATHNAME) ? 1 : 0
+  );
+  useEffect(() => clearCaseStudyEnter(), []);
   // Pointer deck: the native scroll container and the horizontal row inside it
   // whose transform tracks scroll position.
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -716,6 +735,17 @@ export default function FastRouterSlidesPage() {
 
   return (
     <>
+      {/* Entrance. Renders an inert hidden layer unless this mount was armed
+          by a card click, so a refresh or a pasted link lands straight on the
+          deck. scrollerSelector because the pointer deck scrolls an inner
+          container, not the document — on touch that element doesn't exist and
+          it falls back to locking the document, which is what scrolls there. */}
+      <CaseStudyEnter
+        lines={FASTROUTER_ENTER_LINES}
+        scrollerSelector="[data-enter-scroller]"
+        active={enterActive}
+      />
+
       {isTouch ? (
         // Touch: free-scrolling vertical stack, each slide sized to its own
         // content with a fixed 48px gap between slides. bg-bg-primary on each

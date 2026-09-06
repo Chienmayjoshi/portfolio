@@ -20,6 +20,12 @@ import { FASTROUTER_ENTER_LINES } from "@/components/shared/caseStudyEnterLines"
 //     have to target [data-enter-scroller], not the document
 //   - the target is HeroSlide's 48px <h1>, which wraps at its own width, so the
 //     words land on a different set of lines than the vertical hero's
+//
+// Since the deck now mounts its own CaseStudyEnter for the real card-click
+// flow, this route has two overlays in the DOM. The deck's is inert here (it
+// only arms off a sessionStorage flag a card sets, which the lab never sets),
+// and each instance only ever queries inside its own overlay ref, so they
+// don't see each other. Harmless duplication, lab-only.
 export default function CaseStudyEnterSlidesLab() {
   return (
     <EnterLabHarness
