@@ -57,8 +57,12 @@ interface StoredFeedback extends FeedbackAnswers {
   responseId: string;
 }
 
-const buttonClass =
-  "flex items-center justify-center px-24px py-12px rounded-md font-ui font-semibold text-[17px] leading-[28px] tracking-[0.085px] whitespace-nowrap";
+// Shared button geometry/type for both variants. Radius is the one thing
+// that differs: the vertical case studies' row is `rounded-md` (8px, the
+// spec this feature was authored from), the deck slide's frame specifies
+// 12px (`rounded-lg`) — Figma node 7468:22405-22409.
+const buttonBase =
+  "flex items-center justify-center px-24px py-12px font-ui font-semibold text-[17px] leading-[28px] tracking-[0.085px] whitespace-nowrap";
 
 const EMPTY_AGGREGATE: FeedbackAggregateData = {
   count: 0,
@@ -70,12 +74,39 @@ const EMPTY_AGGREGATE: FeedbackAggregateData = {
 interface CaseStudyFeedbackProps {
   caseStudySlug: CaseStudySlug;
   singleSelectQuestion: SingleSelectQuestion;
+  /**
+   * Presentation only — every variant runs the identical flow, storage,
+   * API calls and stage machine below.
+   *
+   * "stacked" (default): the vertical case studies' ThanksForReading row —
+   * left-aligned, quick-feedback promoted to the filled primary, "Let's
+   * talk" secondary on a surface, share as a 44px icon in a neutral border,
+   * plus the "30 seconds max" caption. Authored from the feature spec; no
+   * Figma frame exists for it.
+   *
+   * "centered": the slide deck's closing card (Figma node 7468:22404) —
+   * the row centres, "Let's talk" is the filled primary and quick-feedback
+   * and share are accent-outlined siblings at 12px radius, and the caption
+   * is dropped because the frame doesn't carry it (the button's own title
+   * tooltip still says it). It stacks LEFT-aligned below `md` rather than
+   * the stacked variant's `sm`, matching the breakpoint its slide flips
+   * alignment on so the card doesn't change twice on the way down.
+   *
+   * A variant rather than a second component so the wizard, the aggregate
+   * fetch, the editable-response record and the collapse timer keep living
+   * in exactly one place — the same reason this file holds the whole row in
+   * the first place (see the note above).
+   */
+  variant?: "stacked" | "centered";
 }
 
 export default function CaseStudyFeedback({
   caseStudySlug,
   singleSelectQuestion,
+  variant = "stacked",
 }: CaseStudyFeedbackProps) {
+  const centered = variant === "centered";
+  const buttonClass = `${buttonBase} ${centered ? "rounded-lg" : "rounded-md"}`;
   const [stage, setStage] = useState<Stage>("collapsed");
   const [stored, setStored] = useState<StoredFeedback | null>(null);
   const [aggregate, setAggregate] = useState<FeedbackAggregateData | null>(null);
@@ -157,6 +188,27 @@ export default function CaseStudyFeedback({
 
   const handleCancel = () => setStage("collapsed");
 
+  // Presentation-only, per variant. "centered" promotes "Let's talk" to the
+  // filled primary and demotes quick-feedback to an accent outline; "stacked"
+  // keeps the spec's original emphasis (quick-feedback filled, "Let's talk"
+  // secondary on a surface).
+  const feedbackButtonClass = centered
+    ? "w-full md:w-auto border border-text-accent text-text-accent"
+    : "w-full sm:w-[234px] bg-text-accent border border-text-accent text-white";
+
+  const letsTalk = (
+    <a
+      href="mailto:chinmay.joshi02@gmail.com"
+      className={`${buttonClass} ${
+        centered
+          ? "w-full md:w-[234px] bg-text-accent border border-text-accent text-white"
+          : "w-full sm:w-auto bg-bg-surface border border-text-muted text-text-primary"
+      }`}
+    >
+      Let&rsquo;s talk{centered ? "" : " →"}
+    </a>
+  );
+
   return (
     <FeedbackContainer>
       <AnimatePresence mode="popLayout" initial={false}>
@@ -169,14 +221,27 @@ export default function CaseStudyFeedback({
             transition={{ duration: 0.2 }}
             className="flex flex-col gap-8px w-full"
           >
-            <div className="flex flex-col sm:flex-row gap-16px items-start w-full">
+            {/* Order and emphasis differ by variant, so the three buttons
+                are built once and arranged below rather than duplicating
+                the row (and with it the stored/not-stored branch) per
+                variant. The frame drops the arrow from "Let's talk" that
+                the vertical row carries — copy is canonical, so the
+                centred variant drops it too. */}
+            <div
+              className={
+                centered
+                  ? "flex w-full flex-col items-start gap-12px md:flex-row md:items-center md:justify-center md:gap-16px"
+                  : "flex flex-col sm:flex-row gap-16px items-start w-full"
+              }
+            >
+              {centered && letsTalk}
               {stored ? (
                 <button
                   type="button"
                   onClick={openWizard}
                   title="Edit feedback"
                   aria-label="Edit feedback"
-                  className={`${buttonClass} group relative w-full sm:w-[234px] bg-text-accent border border-text-accent text-white`}
+                  className={`${buttonClass} group relative ${feedbackButtonClass}`}
                 >
                   <span className="group-hover:invisible">Feedback received</span>
                   <span className="invisible group-hover:visible absolute inset-0 flex items-center justify-center">
@@ -188,23 +253,26 @@ export default function CaseStudyFeedback({
                   type="button"
                   onClick={openWizard}
                   title="A couple of quick questions — 30 seconds, max."
-                  className={`${buttonClass} w-full sm:w-[234px] bg-text-accent border border-text-accent text-white`}
+                  className={`${buttonClass} ${feedbackButtonClass}`}
                 >
                   Give quick feedback
                 </button>
               )}
-              <a
-                href="mailto:chinmay.joshi02@gmail.com"
-                className={`${buttonClass} w-full sm:w-auto bg-bg-surface border border-text-muted text-text-primary`}
-              >
-                Let&rsquo;s talk →
-              </a>
+              {!centered && letsTalk}
               <ShareButton
                 iconOnly
-                className="flex items-center justify-center size-[44px] shrink-0 rounded-md border border-border-default text-text-muted hover:text-text-primary transition-colors"
+                iconClassName={centered ? "size-24px" : "size-[16px]"}
+                className={
+                  centered
+                    ? "flex h-[54px] w-[50px] shrink-0 items-center justify-center rounded-lg border border-text-accent text-text-accent transition-colors hover:bg-text-accent hover:text-white"
+                    : "flex items-center justify-center size-[44px] shrink-0 rounded-md border border-border-default text-text-muted hover:text-text-primary transition-colors"
+                }
               />
             </div>
-            {!stored && (
+            {/* Caption is the stacked row's own affordance — the frame for
+                the centred variant doesn't carry it, and the button's title
+                tooltip still says the same thing. */}
+            {!stored && !centered && (
               <span className="font-ui font-normal text-text-muted text-[13px] leading-[18px]">
                 A couple of quick questions · 30 seconds max
               </span>

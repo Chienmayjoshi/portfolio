@@ -35,6 +35,8 @@ import EvaluationsIntroSlide from "@/components/fastrouter-slides/EvaluationsInt
 import TwoRejectedAttemptsSlide from "@/components/fastrouter-slides/TwoRejectedAttemptsSlide";
 import ShippedUnifiedFormSlide from "@/components/fastrouter-slides/ShippedUnifiedFormSlide";
 import ReflectionsSlide from "@/components/fastrouter-slides/ReflectionsSlide";
+import ThanksSlide from "@/components/fastrouter-slides/ThanksSlide";
+import ReadNextSlide from "@/components/fastrouter-slides/ReadNextSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { useHeaderInvertSurface } from "@/components/shared/HeaderProvider";
 
@@ -68,11 +70,23 @@ const SLIDE_IDS = [
   "evaluations-decision-01",
   "evaluations-decision-02",
   "reflections",
+  "thanks",
+  "read-next",
 ] as const;
 // Parallel array of slide bodies, index-aligned with SLIDE_IDS — lets both
 // the touch stack and the pointer deck iterate rather than hardcoding two
 // JSX branches per slide that drift apart as chapters are added.
-const SLIDE_COMPONENTS = [
+//
+// Typed as components of `SlideProps` rather than left to infer `as const`:
+// every slide is rendered with an `active` prop and almost all of them ignore
+// it (a zero-argument function is assignable to a one-argument signature), but
+// an inferred tuple of `() => Element` would reject the prop outright. Only
+// ReadNextSlide reads it — its progress line runs on a timer and must not
+// start until the reader is actually on the slide.
+interface SlideProps {
+  active?: boolean;
+}
+const SLIDE_COMPONENTS: readonly React.ComponentType<SlideProps>[] = [
   HeroSlide,
   ProblemSlide,
   ProductSlide,
@@ -95,7 +109,9 @@ const SLIDE_COMPONENTS = [
   EvaluationsDecision01,
   EvaluationsDecision02,
   ReflectionsSlide,
-] as const;
+  ThanksSlide,
+  ReadNextSlide,
+];
 // Parallel array: which SegmentedRail chapter tick each slide lights up.
 // Distinct from SLIDE_IDS (React keys) because several slides can share one
 // chapter — the Council intro and the first decision are both chapter
@@ -125,6 +141,10 @@ const SLIDE_CHAPTER_IDS = [
   "evaluations",
   "evaluations",
   "reflections",
+  // The closing card is its own chapter, not the tail of Reflections — see
+  // SegmentedRail's CHAPTERS note.
+  "closing",
+  "closing",
 ] as const;
 // Where each chapter starts in SLIDE_CHAPTER_IDS and how many slides it holds
 // — derived, never hand-maintained, so adding a slide to a chapter re-divides
@@ -172,6 +192,8 @@ const SLIDE_RAIL_MODE: readonly SlideRailMode[] = [
   "follow",
   "follow",
   "invert",
+  "follow",
+  "follow",
   "follow",
   "follow",
   "follow",
@@ -760,7 +782,11 @@ export default function FastRouterSlidesPage() {
         // Touch: free-scrolling vertical stack, each slide sized to its own
         // content with a fixed 48px gap between slides. bg-bg-primary on each
         // wrapper matches its slide's own background.
-        <div className="flex w-full flex-col gap-48px">
+        // pb clears the floating section pill (fixed 48px up, 48px tall):
+        // the END of this stack is the one place a reader can't scroll content
+        // out from under it. Lives on the stack, not on whichever slide
+        // happens to be last, so adding a slide can't reintroduce it.
+        <div className="flex w-full flex-col gap-48px pb-[112px]">
           {SLIDE_IDS.map((id, index) => {
             const Slide = SLIDE_COMPONENTS[index];
             return (
@@ -873,7 +899,7 @@ export default function FastRouterSlidesPage() {
                         visibility: index === 0 ? "visible" : "hidden",
                       }}
                     >
-                      <Slide />
+                      <Slide active={index === activeIndex} />
                     </div>
                   );
                 })}
