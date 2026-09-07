@@ -124,6 +124,15 @@ things that follow from that:
   project still carries literal `text-[Npx] leading-[Npx] tracking-[Npx]`
   triples; don't tokenize more of them speculatively.
 
+- The closing "thanks" slide (node `7468:21634`) labels its secondary button
+  "Give Quick Feedback" in title case; the code says "Give quick feedback",
+  which is what the shared `CaseStudyFeedback` row renders on all three
+  vertical case studies too. One label, one component — the deck slide is a
+  presentation variant of that same row, not its own button, so the sentence
+  case wins and Figma wants updating. Same frame draws a decorative 8-tick
+  rail mock; `SegmentedRail`'s `CHAPTERS` table (10 ticks since the Closing
+  chapter was added 2026-09-07) is the tick count, not that mock.
+
 - The `fastrouter-slides` HeroSlide headline has a DEFINED line layout per
   breakpoint rather than a free wrap, expressed as toggled `<br>` elements
   (display:none suppresses a break, so exactly one pair is live at any width —

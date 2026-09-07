@@ -32,6 +32,13 @@ interface Chapter {
 // the mobile panel keep its own divergent label set (the two label sets were
 // deliberately converged onto this table once already; splitting them again
 // would undo that).
+//
+// A tenth tick, "Closing", was added 2026-09-07 by direct instruction when the
+// deck's thanks-for-reading card (Figma 7468:21634) was built: it is neither a
+// reflection nor an outcome, and folding it into either would have mislabelled
+// whichever tick it borrowed. Unnumbered like the other two bookends. The
+// frame's own decorative rail mock draws 8 ticks — this table, not that mock,
+// is the tick count.
 const CHAPTERS: Chapter[] = [
   { id: "hero", label: "Introduction", number: "01" },
   { id: "problem", label: "The Problem", number: "02" },
@@ -42,6 +49,7 @@ const CHAPTERS: Chapter[] = [
   { id: "evaluations", label: "Evaluations", number: "07" },
   { id: "reflections", label: "Reflections", number: null },
   { id: "outcomes", label: "Outcomes", number: null },
+  { id: "closing", label: "Closing", number: null },
 ];
 
 const BUILT_CHAPTER_IDS = new Set([
@@ -53,6 +61,7 @@ const BUILT_CHAPTER_IDS = new Set([
   "observability",
   "evaluations",
   "reflections",
+  "closing",
 ]);
 
 // Both icons are inline SVGs rather than an icon-package import — this repo
