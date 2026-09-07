@@ -52,6 +52,10 @@ const SLIDERS: {
   { key: "fontSize", label: "font size", min: 48, max: 120, step: 0.5, group: "Type" },
   { key: "lineHeight", label: "line height", min: 52, max: 140, step: 1, group: "Type" },
   { key: "boxWidth", label: "box width", min: 600, max: 1200, step: 10, group: "Type" },
+  { key: "burstStart", label: "burst start (x build)", min: 0, max: 1, step: 0.05, group: "Burst" },
+  { key: "burstDistance", label: "burst distance px", min: 0, max: 320, step: 5, group: "Burst" },
+  { key: "burstSpin", label: "burst spin deg", min: 0, max: 45, step: 1, group: "Burst" },
+  { key: "blink", label: "blink", min: 0.08, max: 0.8, step: 0.02, group: "Burst" },
   { key: "stageDuration", label: "stage duration", min: 0.1, max: 1.2, step: 0.02, group: "Stages" },
   { key: "stageOffset", label: "stage offset", min: 0, max: 0.4, step: 0.01, group: "Stages" },
   { key: "stageShift", label: "stage shift px", min: 0, max: 40, step: 1, group: "Stages" },
@@ -268,7 +272,7 @@ export default function EnterLabHarness({
                 <option value="chars">chars</option>
               </select>
             </Row>
-            {(["charEase", "flipEase", "stageEase"] as const).map((key) => (
+            {(["charEase", "flipEase", "burstEase", "stageEase"] as const).map((key) => (
               <Row key={key} label={key.replace("Ease", " ease")}>
                 <select
                   value={config[key]}

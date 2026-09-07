@@ -22,9 +22,23 @@
 // semantic token for subtle hairline decoration.
 interface GridDepthLayerProps {
   className?: string;
+  /**
+   * "lines" (default) is the hairline grid every slide uses. "dots" is the
+   * same 44.44px cell drawn as 6.58px dots instead — Figma node 7485:26880,
+   * the case study entrance's background. Same token, same idea, and its own
+   * fade geometry: that frame's ellipse is 1000x500 centred on the frame, so
+   * the radii are 35%/28% of a 1440x900 viewport, where the slides' fade is
+   * wider (50%/45%) and pushed up to 30%. Radial-gradient sizes are RADII, not
+   * diameters — the dots variant reads much tighter than the lines one, which
+   * is what the frame shows.
+   */
+  variant?: "lines" | "dots";
 }
 
-export default function GridDepthLayer({ className }: GridDepthLayerProps) {
+export default function GridDepthLayer({
+  className,
+  variant = "lines",
+}: GridDepthLayerProps) {
   const line = "var(--color-border-default)";
   // Grid tiling unit is a CSS variable so a caller can vary it per
   // breakpoint (inline style can't hold media queries). Defaults to 44px —
@@ -32,17 +46,25 @@ export default function GridDepthLayer({ className }: GridDepthLayerProps) {
   // no `--grid-cell` is set. Override responsively from className, e.g.
   // `[--grid-cell:24px] md:[--grid-cell:40px]` (Product does exactly this).
   const cell = "var(--grid-cell, 44px)";
+  // 6.58px dots on Figma's 44.44px pitch — a 3.29px radius, rounded to 3.3 the
+  // same way the cell itself rounds 44.44 to 44: a decorative tiling unit, not
+  // a value tied to the 8px content rhythm.
+  const dotted = variant === "dots";
+  const mask = dotted
+    ? "radial-gradient(ellipse 35% 28% at 50% 50%, black, transparent)"
+    : "radial-gradient(ellipse 50% 45% at 50% 30%, black, transparent)";
+  const backgroundImage = dotted
+    ? `radial-gradient(circle at center, ${line} 0, ${line} 3.3px, transparent 3.3px)`
+    : `repeating-linear-gradient(to right, ${line} 0, ${line} 1px, transparent 1px, transparent ${cell}), repeating-linear-gradient(to bottom, ${line} 0, ${line} 1px, transparent 1px, transparent ${cell})`;
   return (
     <div
       aria-hidden="true"
       className={`pointer-events-none ${className ?? ""}`}
       style={{
-        backgroundImage: `repeating-linear-gradient(to right, ${line} 0, ${line} 1px, transparent 1px, transparent ${cell}), repeating-linear-gradient(to bottom, ${line} 0, ${line} 1px, transparent 1px, transparent ${cell})`,
+        backgroundImage,
         backgroundSize: `${cell} ${cell}`,
-        maskImage:
-          "radial-gradient(ellipse 50% 45% at 50% 30%, black, transparent)",
-        WebkitMaskImage:
-          "radial-gradient(ellipse 50% 45% at 50% 30%, black, transparent)",
+        maskImage: mask,
+        WebkitMaskImage: mask,
       }}
     />
   );
