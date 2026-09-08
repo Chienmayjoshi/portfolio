@@ -133,6 +133,25 @@ things that follow from that:
   rail mock; `SegmentedRail`'s `CHAPTERS` table (10 ticks since the Closing
   chapter was added 2026-09-07) is the tick count, not that mock.
 
+- The mobile nav pill's collapsed state (node `7400:30189`) draws its left
+  glyph with Figma's stock `Status` component — a SPINNER: a fixed 75% arc
+  starting at 3 o'clock, rotating -1080 -> 0 on a 2s infinite loop. Code
+  renders a scroll-PROGRESS ring instead: arc length driven by how far
+  through the page the reader is, no rotation, starting at 12 o'clock and
+  filling clockwise. Direct instruction, 2026-09-08 — the ring is a readout
+  of position, which is the whole reason it replaced the old static map
+  icon, and a spinner says "busy," not "you are here." The 3 o'clock start
+  only meant anything while it was rotating. Figma wants updating on all
+  three points; the caret that was added on the right in the same frame is
+  matched exactly.
+
+  Both icon slots stay 24px in code where that frame has 20px glyphs. Not
+  drift — the pill's OPEN state (unchanged, per the same instruction) keeps
+  its 24px close icon, so 20px slots would make the pill 44px tall collapsed
+  and 48px open and it would visibly resize on every tap. The 20px glyphs sit
+  centred in 24px boxes, so Figma's glyph size is honoured and the geometry
+  is identical in both states.
+
 - The `fastrouter-slides` HeroSlide headline has a DEFINED line layout per
   breakpoint rather than a free wrap, expressed as toggled `<br>` elements
   (display:none suppresses a break, so exactly one pair is live at any width —

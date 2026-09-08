@@ -17,12 +17,19 @@ import { armCaseStudyEnter } from "@/components/shared/caseStudyEnterArming";
 // centred on the full frame, like ThanksSlide, so no `--fr-header-h` offset):
 // `items-center justify-between`, left column 600 wide with gap-16 between its
 // two blocks; block one gap-32 (eyebrow → headline), block two gap-40 + pb-40
-// (paragraph → progress line); image card 600×606, radius 24, drop-shadow
-// 0 12 16 rgba(0,0,0,.25).
+// (paragraph → progress line); image card 600×606, radius 24.
 // Mobile (7474:24069): 20px page padding, one `bg-bg-surface` card at radius
 // 12 with p-16 and gap-24; eyebrow row carries a right-aligned arrow the
 // desktop frame has no equivalent of; image 260 tall; the progress line is
 // HIDDEN in the frame — see the auto-advance note below.
+//
+// Shadows, per direct instruction 2026-09-08, against Figma: the frame's
+// 0 12 16 rgba(0,0,0,.25) drop-shadow on the IMAGE card is dropped at both
+// widths — it reads as a UI screenshot pasted onto the page rather than
+// part of it, and on mobile it doubled up with the card it sits inside.
+// In its place the mobile card itself carries a very subtle lift
+// (0 2 8 rgba(0,0,0,.06)) so the surface separates from the page ground;
+// desktop has no card to lift, so it gets nothing. Figma wants updating.
 //
 // Type, per node: eyebrow Geist Mono Medium 13/18/+0.78 uppercase in
 // text-accent; headline Season Mix 48/56/-0.48 desktop, 32/40/-0.32 mobile
@@ -164,7 +171,7 @@ export default function ReadNextSlide({ active = false }: ReadNextSlideProps) {
             column at md. */}
         <ArmEnterLink
           href={NEXT_HREF}
-          className="group mx-auto flex w-full max-w-[1280px] flex-col gap-24px rounded-lg bg-bg-surface p-16px md:flex-row md:items-center md:justify-between md:gap-40px md:rounded-none md:bg-transparent md:p-0"
+          className="group mx-auto flex w-full max-w-[1280px] flex-col gap-24px rounded-lg bg-bg-surface p-16px shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)] md:flex-row md:items-center md:justify-between md:gap-40px md:rounded-none md:bg-transparent md:p-0 md:shadow-none"
         >
           <div className="contents md:flex md:w-[600px] md:shrink-0 md:flex-col md:gap-16px">
             {/* Eyebrow + headline */}
@@ -211,7 +218,7 @@ export default function ReadNextSlide({ active = false }: ReadNextSlideProps) {
           {/* Image card. Geometry is the frame's; the contents are a
               placeholder until an Analytics cover exists — see the note at the
               top of this file. */}
-          <div className="order-2 h-[260px] w-full overflow-hidden rounded-[24px] shadow-[0px_12px_16px_rgba(0,0,0,0.25)] md:order-none md:h-[606px] md:w-[600px] md:shrink-0">
+          <div className="order-2 h-[260px] w-full overflow-hidden rounded-[24px] md:order-none md:h-[606px] md:w-[600px] md:shrink-0">
             <AssetPlaceholder label="[Analytics cover image]" />
           </div>
         </ArmEnterLink>

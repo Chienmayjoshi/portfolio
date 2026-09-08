@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  useScroll,
+  type MotionValue,
+} from "motion/react";
 import {
   useHeaderCaseStudyPill,
   type CaseStudyPill,
@@ -64,16 +70,93 @@ const BUILT_CHAPTER_IDS = new Set([
   "closing",
 ]);
 
-// Both icons are inline SVGs rather than an icon-package import — this repo
-// has no icon dependency at all (see Header.tsx's note: @phosphor-icons/react
-// was wanted but is registry-blocked), so every icon in the portfolio shell is
-// hand-inlined. Paths lifted straight from the Figma nodes (7400:30215 map,
-// 7399:29688 close) with the baked #F9F9F7 fill swapped for currentColor so
-// they follow the pill's own adaptive text tone instead of pinning one scheme.
-function MapIcon() {
+// Every icon here is an inline SVG rather than an icon-package import — this
+// repo has no icon dependency at all (see Header.tsx's note:
+// @phosphor-icons/react was wanted but is registry-blocked), so every icon in
+// the portfolio shell is hand-inlined. Paths lifted straight from the Figma
+// nodes (7399:29688 close, 7515:29439 caret) with any baked fill swapped for
+// currentColor / the muted constant below rather than pinning one scheme.
+//
+// The 24px map icon that used to open the collapsed pill (node 7400:30215) is
+// gone, replaced by ProgressRing — Figma marks that node, and the divider
+// beside it (7400:30192), `hidden` in the current frame, so this is a
+// replacement rather than an addition. The path lives in that hidden node if
+// it is ever wanted back.
+
+// Figma's #6B6B6B (design-tokens neutral.500 / --color-text-muted) for the
+// collapsed pill's ring track and caret. Stays literal on BOTH pill tones
+// rather than becoming an alpha of pillText: it is a mid gray, so it reads as
+// a step down from the label against the white pill and the black one alike.
+// Figma only drew the dark-pill variant.
+const PILL_GLYPH_MUTED = "#6B6B6B";
+
+// How far through the whole page the reader is, as the collapsed pill's left
+// glyph. Replaces a static icon, per direct instruction — Figma's own Status
+// node (7515:29455) is a borrowed SPINNER (a fixed 75% arc rotating -1080 -> 0
+// on a 2s infinite loop, starting at 3 o'clock), which is not what this is
+// for. Three deliberate departures from that node, all confirmed:
+// - Arc length is driven by scroll progress, not fixed at 75%.
+// - No rotation. The ring is a readout, not a busy indicator.
+// - Starts at 12 o'clock (`rotate(-90 10 10)`) and fills clockwise. Figma's
+//   3 o'clock start only meant anything while the ring was spinning.
+// Figma wants updating on all three.
+//
+// Geometry matches the node otherwise: r 9 + a 2px stroke puts the ring's
+// outer edge exactly on the 20px box, which is what Figma's Status frame does
+// inside its own 20px parent. `overflow-visible` keeps that boundary from
+// being shaved by antialiasing.
+//
+// `pathLength` is Motion's first-class progress prop — it normalises the
+// dasharray/dashoffset itself, so there is no circumference constant to keep
+// in sync with the radius. Driven by a MotionValue, so scrolling repaints the
+// arc without re-rendering React.
+function ProgressRing({ progress }: { progress: MotionValue<number> }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="size-24px" aria-hidden="true">
-      <path d="M21.4612 4.65844C21.3714 4.58843 21.2668 4.53981 21.1554 4.51626C21.0439 4.4927 20.9286 4.49484 20.8181 4.5225L15.0872 5.955L9.33563 3.07875C9.17537 2.99882 8.99181 2.97887 8.81812 3.0225L2.81812 4.5225C2.65587 4.56306 2.51183 4.65668 2.40889 4.7885C2.30595 4.92031 2.25003 5.08275 2.25 5.25V18.75C2.25002 18.864 2.27601 18.9764 2.32599 19.0788C2.37598 19.1813 2.44864 19.2709 2.53847 19.3411C2.62831 19.4112 2.73294 19.4599 2.84442 19.4836C2.95591 19.5072 3.07131 19.5051 3.18187 19.4775L8.91281 18.045L14.6644 20.9213C14.7688 20.9727 14.8836 20.9997 15 21C15.0613 21 15.1224 20.9924 15.1819 20.9775L21.1819 19.4775C21.3441 19.4369 21.4882 19.3433 21.5911 19.2115C21.694 19.0797 21.75 18.9172 21.75 18.75V5.25C21.75 5.13593 21.724 5.02336 21.674 4.92085C21.624 4.81834 21.5512 4.72859 21.4612 4.65844ZM9.75 4.96312L14.25 7.21312V19.0369L9.75 16.7869V4.96312ZM3.75 5.83594L8.25 4.71094V16.6641L3.75 17.7891V5.83594ZM20.25 18.1641L15.75 19.2891V7.33594L20.25 6.21094V18.1641Z" />
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      className="size-20px overflow-visible"
+      aria-hidden="true"
+    >
+      <circle
+        cx="10"
+        cy="10"
+        r="9"
+        stroke={PILL_GLYPH_MUTED}
+        strokeWidth="2"
+      />
+      {/* currentColor, so the arc inverts with RAIL_COLORS[theme] exactly like
+          the label beside it. Figma draws it at #F5F5F5 against the dark pill;
+          pillText is #FFFFFF there — a 4-unit difference on a 2px stroke,
+          taken in exchange for the arc flipping correctly on the light pill,
+          which Figma never drew. */}
+      <motion.circle
+        cx="10"
+        cy="10"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        transform="rotate(-90 10 10)"
+        style={{ pathLength: progress }}
+      />
+    </svg>
+  );
+}
+
+// Right-hand glyph of the collapsed pill, newly added in the same frame — the
+// first thing that says out loud that the pill opens. Pinned to the muted tone
+// rather than currentColor: Figma has it at #6B6B6B, a step below the label,
+// not level with it.
+function CaretDownIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill={PILL_GLYPH_MUTED}
+      className="size-20px"
+      aria-hidden="true"
+    >
+      <path d="M16.6922 7.94219L10.4422 14.1922C10.3841 14.2503 10.3152 14.2964 10.2393 14.3279C10.1635 14.3593 10.0821 14.3755 10 14.3755C9.91787 14.3755 9.83654 14.3593 9.76066 14.3279C9.68479 14.2964 9.61586 14.2503 9.55781 14.1922L3.30781 7.94219C3.19054 7.82491 3.12465 7.66585 3.12465 7.5C3.12465 7.33415 3.19054 7.17509 3.30781 7.05781C3.42509 6.94054 3.58415 6.87465 3.75 6.87465C3.91585 6.87465 4.07491 6.94054 4.19219 7.05781L10 12.8664L15.8078 7.05781C15.8659 6.99974 15.9348 6.95368 16.0107 6.92225C16.0866 6.89083 16.1679 6.87465 16.25 6.87465C16.3321 6.87465 16.4134 6.89083 16.4893 6.92225C16.5652 6.95368 16.6341 6.99974 16.6922 7.05781C16.7503 7.11588 16.7963 7.18482 16.8277 7.26069C16.8592 7.33656 16.8753 7.41788 16.8753 7.5C16.8753 7.58212 16.8592 7.66344 16.8277 7.73931C16.7963 7.81518 16.7503 7.88412 16.6922 7.94219Z" />
     </svg>
   );
 }
@@ -294,6 +377,20 @@ export default function SegmentedRail({
   const panelId = useId();
   const pillButtonRef = useRef<HTMLButtonElement>(null);
   const reduceMotion = useReducedMotion();
+  // 0-1 through the whole document, for the collapsed pill's ProgressRing.
+  // The pill only ever renders on touch, where the deck is plain document flow
+  // (page.tsx's stacked branch) — so the window IS the scroller and useScroll's
+  // default target is right. Called unconditionally per the hooks rule: on the
+  // pointer/"rail" branch an inner container scrolls instead, so this sits at 0
+  // there, and nothing reads it.
+  //
+  // Motion rather than GSAP even though this is scroll-scrubbed. CLAUDE.md's
+  // real constraint is that the two engines must never share an element's
+  // timeline; here only Motion touches this one, and this route runs no GSAP at
+  // all. Returns a MotionValue, so the arc repaints without a React render per
+  // scroll tick — the same useMotionValue-drives-a-progress-visual shape
+  // ReadNextSlide.tsx already uses.
+  const { scrollYProgress } = useScroll();
 
   const activeIndex = CHAPTERS.findIndex((c) => c.id === activeId);
   const activeChapter = CHAPTERS[activeIndex];
@@ -475,7 +572,16 @@ export default function SegmentedRail({
           variant of the panel, which would have stranded a black panel under a
           white pill on light slides.
 
-          Four deliberate deviations from the Figma frame, all confirmed:
+          The collapsed state's two glyphs — a scroll-progress ring on the left
+          and a caret on the right — come from the current version of node
+          7400:30189, which hides the old map icon (7400:30215) and its divider
+          (7400:30192) rather than keeping them alongside. The ring departs from
+          that node in three confirmed ways (progress-driven, not spinning; no
+          rotation; 12 o'clock start, not 3) — see ProgressRing's own note.
+          Only the collapsed state changes: open, the pill is byte-for-byte what
+          it was, close icon and empty balancing box included.
+
+          Five deliberate deviations from the Figma frame, all confirmed:
           - Width is derived, not the frame's fixed 186px. 186 is FastRouter's
             own longest-label measurement and predates the 24px map icon plus
             the 24px centring spacer, which together eat 64px of it — "Feature
@@ -493,6 +599,12 @@ export default function SegmentedRail({
           - The collapsed pill drops the chapter number and its divider — that
             IS the frame, noted here only because the desktop hover pill keeps
             both, so the two intentionally differ now.
+          - Both icon slots stay 24px with the 20px glyphs centred inside,
+            rather than shrinking to the frame's 20px. Load-bearing, not
+            laziness: the open state keeps its 24px close icon, so 20px slots
+            would make the pill 44px tall collapsed and 48px open and it would
+            visibly resize on every tap. At 24px the geometry is identical in
+            both states and only the glyphs change.
 
           Motion, not GSAP: this is a state-driven open/close, which CLAUDE.md
           puts squarely in Motion's lane (and this route runs no GSAP at all).
@@ -614,7 +726,7 @@ export default function SegmentedRail({
               >
                 <AnimatePresence mode="popLayout" initial={false}>
                   <motion.span
-                    key={panelOpen ? "close" : "map"}
+                    key={panelOpen ? "close" : "progress"}
                     initial={
                       reduceMotion
                         ? { opacity: 0 }
@@ -636,7 +748,11 @@ export default function SegmentedRail({
                     }}
                     className="col-start-1 row-start-1 flex"
                   >
-                    {panelOpen ? <CloseIcon /> : <MapIcon />}
+                    {panelOpen ? (
+                      <CloseIcon />
+                    ) : (
+                      <ProgressRing progress={scrollYProgress} />
+                    )}
                   </motion.span>
                 </AnimatePresence>
               </span>
@@ -674,12 +790,35 @@ export default function SegmentedRail({
                 </AnimatePresence>
               </span>
 
-              {/* Figma's own centring trick (node 7400:30194 — a second icon
-                  at opacity 0): a 24px box balancing the real icon on the left
-                  so the label reads optically centred in the pill rather than
-                  centred in the space left over beside the icon. Rendered as
-                  an empty box rather than a duplicated icon; same result. */}
-              <span aria-hidden="true" className="size-24px shrink-0" />
+              {/* Started as Figma's own centring trick (node 7400:30194 — a
+                  second icon at opacity 0): a 24px box balancing the real icon
+                  on the left so the label reads optically centred in the pill
+                  rather than centred in the space left over beside the icon.
+                  It now holds the caret while collapsed, but it still has that
+                  job — the box stays even once the caret fades out on open, or
+                  the label would shunt right every time the panel opened. */}
+              <span
+                aria-hidden="true"
+                className="grid size-24px shrink-0 place-items-center"
+              >
+                <AnimatePresence initial={false}>
+                  {!panelOpen && (
+                    <motion.span
+                      key="caret"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{
+                        duration: reduceMotion ? 0.1 : 0.22,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
+                      className="col-start-1 row-start-1 flex"
+                    >
+                      <CaretDownIcon />
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </span>
             </button>
           </div>
         </>

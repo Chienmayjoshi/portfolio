@@ -34,22 +34,32 @@ import { feedbackQuestions } from "@/components/shared/feedbackQuestions";
 //   mock is decorative in this frame, not a rail spec — SegmentedRail's
 //   CHAPTERS table is the source of truth for tick count.
 //
-// Mobile is DERIVED, not Figma-locked: no mobile frame exists for this
-// slide (confirmed with the person before building). It follows the
-// deck's established mobile conventions — 20px page padding, the
-// `text-slide-title-sm` headline step, the paragraph's designed line
-// break released below `md` so it reflows, and the CTA row stacking to
-// full-width buttons (CaseStudyFeedback's own responsive step).
+// Mobile IS Figma-locked as of 2026-09-08: node 7494:27824 (named
+// "reflections - mobile" — stale name, duplicated from that frame; its
+// content is this slide), content node 7494:28213. It supersedes the
+// derived mobile pass this file shipped with on 2026-09-07, and it
+// confirms that pass's two judgement calls — 20px page padding and the
+// whole block LEFT-aligned rather than inheriting the desktop frame's
+// centring. Centring stays a desktop-only treatment, returning at `md`.
 //
-// Below `md` the whole block is LEFT-aligned rather than inheriting the
-// frame's centring (direct instruction, 2026-09-07, against a phone
-// screenshot): every other major section in the deck reads left-aligned
-// on mobile, and a centred ragged column in a 350px measure is the odd
-// one out. Centring is a desktop-only treatment here — it returns at
-// `md`, where the frame's own composition applies. The CTA row's
-// centred variant flips on the same `md` breakpoint for that reason,
-// not the shared row's usual `sm`, so the slide changes alignment once
-// rather than twice.
+// What the frame CHANGES from the derived pass, all of it mobile-only:
+// - Rhythm. Figma's stack is outer gap-24 / header gap-24 / body gap-24,
+//   with the lead+paragraph pair sitting inside a `reveal rows` wrapper
+//   carrying py-16 and gap-16. That wrapper is animation scaffolding, not
+//   a box — flattened here to the visual result it produces: header→body
+//   40 (24 + 16), eyebrow→headline 24, lead→paragraph 16,
+//   paragraph→CTA 40 (16 + 24).
+// - Body type. The lead line steps UP to the `decision-title` style
+//   (20/26/-0.1) and the paragraph steps DOWN to `caption-regular`
+//   (14/20/+0.07). The old comment here argued body type deliberately
+//   does not shrink on mobile, reasoning from the Council/Evaluations
+//   intro frames; that was a derivation, and a real frame for this slide
+//   now outranks it. Figma binds the lead line to DM Sans via
+//   `decision-title` — stale, per CLAUDE.md's known-gaps list; Google
+//   Sans Flex is correct and is what renders.
+// - The CTA row stays a horizontal 3-up row instead of stacking to
+//   full-width buttons, with a short "+ Feedback" label. That lives in
+//   `CaseStudyFeedback`'s centred variant, not here.
 //
 // Clearance for the floating section pill (which was covering the share
 // button when this was the last slide, reported directly) is NOT here:
@@ -57,11 +67,6 @@ import { feedbackQuestions } from "@/components/shared/feedbackQuestions";
 // fastrouter-slides/page.tsx, since the thing the pill can cover is the
 // END of the stack, not this particular card. ReadNextSlide now follows
 // this one anyway.
-// Body type deliberately does NOT shrink on mobile: 17/28 and 16/28 are
-// already comfortable at 390px, and this deck's own mobile frames set
-// centred paragraphs LARGER than desktop rather than smaller (Council and
-// Evaluations intros both go 18/30 on mobile), so shrinking would be
-// against the file's grain.
 export default function ThanksSlide() {
   return (
     <section
@@ -81,9 +86,9 @@ export default function ThanksSlide() {
           the deck's own scroller hides its own; overscroll chaining is left
           ON so reaching the end of this box still advances the deck. */}
       <div className="relative z-10 flex w-full flex-col px-20px pt-32px pb-40px md:h-full md:overflow-y-auto md:px-80px md:py-40px md:[scrollbar-width:none] md:[&::-webkit-scrollbar]:hidden">
-        <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-24px md:my-auto md:gap-16px">
+        <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-40px md:my-auto md:gap-16px">
           {/* Header */}
-          <div className="flex flex-col items-start gap-16px md:items-center md:gap-24px">
+          <div className="flex flex-col items-start gap-24px md:items-center">
             <span className="text-left font-mono font-medium text-[13px] text-text-accent uppercase leading-[18px] tracking-[0.78px] md:text-center">
               Thanks for reading
             </span>
@@ -92,27 +97,34 @@ export default function ThanksSlide() {
             </h1>
           </div>
 
-          {/* Body */}
-          <div className="flex flex-col gap-32px md:gap-40px">
-            <p className="w-full text-left font-ui font-semibold text-[17px] text-text-primary leading-[28px] tracking-[0.085px] md:text-center">
-              You read the whole thing. Most people don&rsquo;t - I mean that.
-            </p>
+          {/* Body. The lead line and the paragraph are grouped so they can
+              sit 16px apart on mobile (Figma's `reveal rows` wrapper gap)
+              while everything else in the body stays 40 — on desktop the
+              group's gap matches the body's, so the three blocks read as
+              one evenly-spaced stack there, which is what node 7468:22393
+              specifies. */}
+          <div className="flex flex-col gap-40px">
+            <div className="flex flex-col gap-16px md:gap-40px">
+              <p className="w-full text-left font-ui font-semibold text-[20px] text-text-primary leading-[26px] tracking-[-0.1px] md:text-center md:text-[17px] md:leading-[28px] md:tracking-[0.085px]">
+                You read the whole thing. Most people don&rsquo;t - I mean that.
+              </p>
 
-            {/* Figma's two-line break is held with an md: block span (the
-                technique the hero headline uses), so the designed break
-                survives on desktop and the sentence reflows to the column
-                below md instead of breaking mid-thought on a phone. The
-                trailing space inside the span is what keeps the two halves
-                separated when they're inline. */}
-            <p className="w-full text-left font-ui font-normal text-[16px] text-text-muted leading-[28px] tracking-[0.08px] md:text-center">
-              <span className="md:block">
-                If you want to dig into anything I skimmed over, process, edge
-                cases, the trade-offs that didn&rsquo;t fit on the page,{" "}
-              </span>
-              <span className="md:block">
-                reply by email or send this to a teammate.
-              </span>
-            </p>
+              {/* Figma's two-line break is held with an md: block span (the
+                  technique the hero headline uses), so the designed break
+                  survives on desktop and the sentence reflows to the column
+                  below md instead of breaking mid-thought on a phone. The
+                  trailing space inside the span is what keeps the two halves
+                  separated when they're inline. */}
+              <p className="w-full text-left font-ui font-normal text-[14px] text-text-muted leading-[20px] tracking-[0.07px] md:text-center md:text-[16px] md:leading-[28px] md:tracking-[0.08px]">
+                <span className="md:block">
+                  If you want to dig into anything I skimmed over, process, edge
+                  cases, the trade-offs that didn&rsquo;t fit on the page,{" "}
+                </span>
+                <span className="md:block">
+                  reply by email or send this to a teammate.
+                </span>
+              </p>
+            </div>
 
             {/* Behaviour is untouched — same component, same wiring, as the
                 vertical case studies' ThanksForReading: "Let's talk" is the
