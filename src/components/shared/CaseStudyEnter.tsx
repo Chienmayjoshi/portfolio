@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { SplitText } from "gsap/SplitText";
 import GridDepthLayer from "@/components/shared/GridDepthLayer";
+import ThemeSwap from "@/components/shared/ThemeSwap";
 import type { EnterTitleLines } from "@/components/shared/caseStudyEnterLines";
 
 // Case study entrance: a large centered headline builds letter-by-letter, then
@@ -115,7 +116,10 @@ export interface CaseStudyEnterConfig {
   charEase: string;
   charShift: number; // yPercent
   charBlur: number; // px, blur-fade only
-  // (b) the hold before it moves
+  // (b) the hold before it moves. A FLOOR, not the value: when there's an eye,
+  // the snap can't happen until its blink has played and the decorations have
+  // faded off, so `eyeDwell + DECO_OUT` wins whenever it's the larger of the
+  // two. This is what governs a case study with no eye.
   hold: number;
   // (c) the snap
   pairing: Pairing;
@@ -129,17 +133,32 @@ export interface CaseStudyEnterConfig {
   lineHeight: number;
   boxWidth: number;
   // (d2) the decorations: dot field, three bots, the eye
-  burstStart: number; // fraction of the build to start drifting at
-  burstDistance: number; // px of outward drift, at the 78.5px reference scale
-  burstSpin: number; // deg added to each element's rest rotation over the drift
+  burstDistance: number; // px each bot floats outward, at the 78.5px reference
+  burstSpin: number; // deg the bot unwinds over its float, into Figma's angle
   burstEase: string;
-  blink: number; // seconds for the eye's one blink
+  eyeDwell: number; // seconds the eye is on screen before its lids close
   // (e) staged reveal of eyebrow / tldr + metadata / cockpit
   stageDuration: number;
   stageOffset: number;
   stageShift: number;
   stageEase: string;
 }
+
+// Where the blink sits INSIDE the GIF, in seconds. The asset is 121 frames at
+// 30ms (3.63s) and loops forever, and a GIF cannot be seeked — so the only
+// lever the timeline has is when playback starts, and this constant is what it
+// subtracts. Read off the frame table rather than the eye:
+//
+//   0-57    0.00-1.74s  partial redraws of a ~154x93 region: the pupil drifting
+//   58-62   1.74-1.89s  full-canvas redraws, changed band shrinking: lids closing
+//   63-66   1.89-2.01s  1x1 no-op frames: held shut
+//   67-72   2.01-2.19s  lids reopening
+//   73-120  2.19-3.63s  the pupil drifting again
+//
+// 1.74 is the frame the lids START to close. It is also how long the eye has
+// to be on screen for its whole drift to play, which is why `eyeDwell` below
+// defaults to this same number rather than to a literal of its own.
+const GIF_BLINK_AT = 1.74;
 
 // Starting values. fontSize/lineHeight/boxWidth come from the outlined vectors
 // in Figma frames 1-3: a 940px box centered in a 1440 frame, 96px line spacing,
@@ -175,20 +194,26 @@ export const ENTER_DEFAULTS: CaseStudyEnterConfig = {
   fontSize: 78.5,
   lineHeight: 96,
   boxWidth: 940,
-  burstStart: 0.5,
-  burstDistance: 90,
+  burstDistance: 64,
   burstSpin: 6,
   burstEase: "power1.out",
-  blink: 0.26,
+  // The asset's own pre-blink phase, as the symbol rather than as 1.74: at
+  // exactly this value the GIF starts on the frame the eye appears, so it
+  // fades in on frame 0 and every frame of the pupil drift plays before the
+  // lids close. Anything lower starts playback early and fades the eye in
+  // partway through that drift. Bound to the constant so a re-exported GIF
+  // can't leave the two out of step.
+  eyeDwell: GIF_BLINK_AT,
   stageDuration: 0.4,
   stageOffset: 0.06,
   stageShift: 8,
   stageEase: "power2.out",
 };
 
-// Decorations, from Figma node 7485:26879 — the entrance's updated frame: a
-// dot field behind everything, three "claudecode" bots scattered around the
-// title, and the eye sitting at the end of the last line.
+// Decorations, from Figma node 7439:44092 — the frame as of 2026-09-08, which
+// updated 7485:26879's still eye to an animated one. A dot field behind
+// everything, three "claudecode" bots scattered around the title, and the eye
+// sitting at the end of the last line.
 //
 // Positions are element CENTRES as a fraction of the 1440x900 frame, so they
 // hold their place in the composition at any viewport. Sizes and rotations are
@@ -197,63 +222,85 @@ export const ENTER_DEFAULTS: CaseStudyEnterConfig = {
 // scale per instance. All three tilt anticlockwise, hence the negative CSS
 // rotation.
 //
+// These are where each bot ENDS, not where it rests. Each one starts
+// `burstDistance` inward along the vector from the overlay's centre to its own
+// — close against the headline, and for two of the three genuinely behind it —
+// and floats out to the node's own place, arriving there as it fades off. So
+// Figma's composition is the last thing the frame holds rather than the first,
+// which is also the only moment all three are at full opacity together.
+//
 // The bots are one glyph at two sizes (Figma exports them as 72x61 and 47x40
-// SVGs of the same path), so it is inlined once below rather than downloaded
-// three times — the convention every other icon in this shell follows.
+// SVGs of the same path), so all three <img> the same file and the browser
+// fetches it once. They ship as files rather than an inlined path because the
+// COLOUR is the asset: Figma's exports bake #ECEBEB on light and #484646 on
+// dark, and neither value exists in design-tokens.json (`bg-light` is #F5F5F5
+// / #212121, a step fainter in both themes). Keeping the fills in the SVGs is
+// the honest place for an off-token value — flagged, per direct instruction
+// 2026-09-08, and worth a token pair if these colours ever get reused.
 const ENTER_BOTS = [
   { left: 245.66 / 1440, top: 273.74 / 900, w: 72, h: 61, rotation: -12.3 },
   { left: 1239.37 / 1440, top: 366.45 / 900, w: 46.8, h: 39.6, rotation: -15.8 },
   { left: 639.92 / 1440, top: 640.94 / 900, w: 46.8, h: 39.6, rotation: -14.8 },
 ];
 
-// The eye is placed against the TEXT, not the frame: 123.36 x 78.86 at the
-// reference 78.5px type, set just past the end of the last line and centred on
-// that line's em box. Anchoring it to the frame would leave it floating away
-// from the sentence as soon as the box shrinks, and anchoring it to the line
-// BOX (rather than the glyphs) would tie it to a line-height that is 96 here
-// against Figma's 84. The 0.32em gap is solved from the frame: it puts the
-// eye's centre at x=899.7 in a 1440 frame, which is where the node sits. The
-// 0.273em drop is the same solve vertically: the frame puts the eye 21.4px
-// below the last line's centre at 78.5px type, so it rides low against the
-// baseline rather than sitting level with the x-height. Expressed against the
-// GLYPHS, not the line box, so it survives this build's 96px leading where
-// Figma's frame has 84.
+// The eye is placed against the TEXT, not the frame: 145 x 80 at the reference
+// 78.5px type, tilted 8 degrees clockwise, set just past the end of the last
+// line and centred on that line's em box. Anchoring it to the frame would
+// leave it floating away from the sentence as soon as the box shrinks, and
+// anchoring it to the line BOX (rather than the glyphs) would tie it to a
+// line-height that is 96 here against Figma's 84.
 //
-// It renders as a MASK painted with `text-primary`, not as an <img>. The
-// source is line art that shipped on an opaque white ground; the checked-in
-// PNG is that art keyed to alpha (white -> transparent, ink -> black with the
-// darkness as alpha, so the antialiased edges survive). Masking it means the
-// eye takes the same colour as the headline it sits in — light art on the dark
-// page, dark art on the light one — instead of carrying a white plate into
-// dark mode.
-const ENTER_EYE = { w: 123.36, h: 78.86, gapEm: 0.32, dropEm: 0.273 };
+// Node 7507:29250 ("blink 1"), which replaced the still `eye 1` this was first
+// solved against — it moved right and grew. 145 x 80 is exactly 0.625 x the
+// GIF's own 232 x 128, so the aspect is the asset's. Size and angle come from
+// the node's axis-aligned box the same way the bots' do: a w x h box rotated
+// by θ measures w·cosθ + h·sinθ wide, and 154.62 x 99.17 solves to 8.0° at
+// that 0.625 scale. Sign checked against the render's corners rather than
+// assumed — the plate's topmost pixel is its top-LEFT corner, so clockwise.
+//
+// The 0.308em gap is solved from the frame, holding the last line's right edge
+// fixed: `centre = lastLine.right + gapEm·fontSize + w/2` put the old 123.36
+// box at x=899.7, and the new 145 box has to land at 909.6. The 0.273em drop
+// became 0.275em for the 0.2px the node's centre rose. It rides low against
+// the baseline rather than sitting level with the x-height, and is expressed
+// against the GLYPHS, not the line box, so it survives this build's 96px
+// leading where Figma's frame has 84.
+const ENTER_EYE = {
+  w: 145,
+  h: 80,
+  gapEm: 0.308,
+  dropEm: 0.275,
+  rotation: 8,
+  // Below `md` the eye is not beside the sentence at all — see the placement
+  // in run(). `stackGapEm` is the clearance between its box and the top of the
+  // first line, in ems of the overlay's own type so it tracks the fit.
+  stackGapEm: 0.5,
+  // How far below its resting place the eye starts, as a fraction of its own
+  // height, so the rise reads the same at 80px and at 25px.
+  riseRatio: 0.4,
+};
 
-const EYE_MASK = "url(/images/fastrouter/fr-enter-eye.png)";
+// The eye ships as a GIF per theme, not as one alpha mask painted with
+// `text-primary` — which is what it was while the asset was a single still and
+// a `scaleY` squash stood in for the blink. Both files bake an OPAQUE ground
+// (light is black art on #FFF, dark is white art on #000), so against the page
+// they would each show a rectangular plate, exactly as Figma's own render
+// does. `mix-blend-mode` knocks it out instead of a re-export: multiply drops
+// pure white, screen drops pure black, and the antialiased line art survives
+// both. See the markup at the bottom of this file.
+const ENTER_EYE_SRC = {
+  light: "/images/fastrouter/fr-blink-light.gif",
+  dark: "/images/fastrouter/fr-blink-dark.gif",
+};
 
-// Fixed, not tunable: the decorations are simply present in Figma's frames, and
-// the fade only exists so they don't pop in on frame one.
-const DECO_FADE = 0.5;
-
-// One path, from Figma's own export (node 7485:27695), with its baked #F1F1F1
-// swapped for currentColor. The fill token is `bg-light`, the nearest thing in
-// the palette to that grey: it is what keeps these as a barely-there tint in
-// BOTH themes, where a literal #F1F1F1 would glare on a dark page.
-function EnterBotGlyph() {
-  return (
-    <svg
-      viewBox="0 0 72 61"
-      fill="currentColor"
-      className="block h-full w-full"
-      aria-hidden="true"
-    >
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M65.9933 30.4967H72V40.8367H66V50.93H61.0433V60.6667H56V50.93H51.0433V60.6667H46V50.93H26V60.6667H20.96V50.93H16V60.6667H10.9567V50.93H6V40.8333H0V30.5H6V0.666668H65.9933V30.4967ZM16 30.4967H20.96V21.0067H16V30.4967ZM51.0333 30.4967H56V21.0067H51.0333V30.4967Z"
-      />
-    </svg>
-  );
-}
+// Fixed, not tunable. The bots arrive one at a time rather than as a layer
+// switching on — three things blinking into the dark, which is what "like a
+// firefly" asks for; a single fade for all three reads as the plate changing
+// opacity. DECO_OUT is the shared exit, and the only hard requirement on it is
+// that it finishes before the snap (see `snapAt` below).
+const BOT_FADE_IN = 0.8;
+const BOT_STAGGER = 0.35;
+const DECO_OUT = 0.3;
 
 interface CaseStudyEnterProps {
   /**
@@ -337,7 +384,23 @@ export default function CaseStudyEnter({
       overlay.querySelectorAll<HTMLElement>("[data-enter-bot]")
     );
     const eye = overlay.querySelector<HTMLElement>("[data-enter-eye]");
+    const eyeImg = overlay.querySelector<HTMLImageElement>(
+      "[data-enter-eye-img]"
+    );
     const decorations = [...bots, ...(eye ? [eye] : [])];
+
+    // Same read ThemeProvider does, rather than ThemeSwap's render-both — one
+    // 250KB GIF per theme is exactly the case ThemeSwap's own header excludes,
+    // and rendering both would start two of them. A theme toggle during the
+    // four seconds this runs is an accepted edge case.
+    const eyeSrc = document.documentElement.classList.contains("dark")
+      ? ENTER_EYE_SRC.dark
+      : ENTER_EYE_SRC.light;
+    // Warmed now so the assignment below decodes off the cache. The <img>
+    // mounts with NO src precisely so that assignment is what starts the GIF:
+    // an already-mounted one would be somewhere mid-loop by the time the
+    // timeline exists, and re-assigning an identical src is a no-op.
+    if (eyeImg) new Image().src = eyeSrc;
 
     let cancelled = false;
     let tl: gsap.core.Timeline | null = null;
@@ -415,6 +478,10 @@ export default function CaseStudyEnter({
           clearProps: "transform,width,height",
           opacity: 0,
         });
+        // Dropping the src is what rewinds the GIF: it has no seek, so a
+        // replay that left the element loaded would resume mid-loop and the
+        // blink would land wherever it happened to be.
+        eyeImg?.removeAttribute("src");
       }
       unlock();
       split?.revert();
@@ -565,8 +632,7 @@ export default function CaseStudyEnter({
       // the type just took, so the whole composition scales as one thing rather
       // than the bots staying 72px wide next to a 40px headline on a phone.
       // Sizes go on width/height rather than a transform scale, which leaves
-      // GSAP's transform channel free for the drift, the rest rotation, and the
-      // eye's blink (a `scale` set here would fight the blink's `scaleY`).
+      // GSAP's transform channel free for the drift and the rest rotation.
       const decoScale = fontSize / ENTER_DEFAULTS.fontSize;
       const overlayRect = overlay.getBoundingClientRect();
       bots.forEach((el, i) => {
@@ -583,39 +649,61 @@ export default function CaseStudyEnter({
         });
       });
       if (eye) {
+        const firstLine = textRect(lineEls[0]);
         const lastLine = textRect(lineEls[lineEls.length - 1]);
         const eyeWidth = ENTER_EYE.w * decoScale;
-        // Clamped to stay on screen. The frame is 1440 wide and there is no
-        // mobile one for these decorations; at 390 the last line very nearly
-        // fills the column, so the eye's natural place — just past the end of
-        // it — lands off the right edge and the deco layer's overflow clips it.
-        // The clamp also leaves the drift room to happen in: it is the one
-        // decoration that has to stay legible for its whole run, since the
-        // blink is the beat this frame was updated for, and without that
-        // margin the eye simply drifts out of frame on a phone.
-        const eyeCentre = Math.min(
-          lastLine.right -
-            overlayRect.left +
-            ENTER_EYE.gapEm * fontSize +
-            eyeWidth / 2,
-          overlayRect.width -
-            eyeWidth / 2 -
-            12 -
-            cfg.burstDistance * decoScale
-        );
+        const eyeHeight = ENTER_EYE.h * decoScale;
+
+        // Two placements, and CSS picks between them rather than a second
+        // breakpoint declared here: the two line sets are tagged `base` and
+        // `md`, and whichever one has boxes is the one the media query chose.
+        // Reading it back beats matchMedia("(min-width: 768px)"), which would
+        // restate Tailwind's `md` in a place that can silently drift from it.
+        const stacked =
+          lineEls[0].parentElement?.dataset.enterOverlaySet === "base";
+
+        // Beside the sentence, per Figma — but only where the sentence leaves
+        // room. There is no mobile frame for these decorations, and at phone
+        // widths the last line very nearly fills the column, so the eye's
+        // designed place lands off the right edge; clamping it back on screen
+        // just parked it on top of "decision." So below `md` it stops being
+        // punctuation on the line and becomes a mark ABOVE the block instead:
+        // horizontally centred, sitting `stackGapEm` clear of the first line's
+        // glyphs. There is always room up there — the block is centred in the
+        // viewport, so what the shorter lines give back vertically is exactly
+        // the space this needs — and the second clamp keeps it off the header
+        // on a short one.
+        const eyeLeft = stacked
+          ? overlayRect.width / 2
+          : Math.min(
+              lastLine.right -
+                overlayRect.left +
+                ENTER_EYE.gapEm * fontSize +
+                eyeWidth / 2,
+              overlayRect.width - eyeWidth / 2 - 12
+            );
+        const eyeTop = stacked
+          ? Math.max(
+              eyeHeight / 2 + 12,
+              firstLine.top -
+                overlayRect.top -
+                ENTER_EYE.stackGapEm * fontSize -
+                eyeHeight / 2
+            )
+          : (lastLine.top + lastLine.bottom) / 2 -
+            overlayRect.top +
+            ENTER_EYE.dropEm * fontSize;
+
         gsap.set(eye, {
           width: eyeWidth,
-          height: ENTER_EYE.h * decoScale,
-          left: eyeCentre,
-          top:
-            (lastLine.top + lastLine.bottom) / 2 -
-            overlayRect.top +
-            ENTER_EYE.dropEm * fontSize,
+          height: eyeHeight,
+          left: eyeLeft,
+          top: eyeTop,
           xPercent: -50,
           yPercent: -50,
+          rotation: ENTER_EYE.rotation,
           x: 0,
           y: 0,
-          scaleY: 1,
           opacity: 0,
         });
       }
@@ -686,8 +774,23 @@ export default function CaseStudyEnter({
       // for no reason once the build has landed.
       tl.set(chars, { clearProps: "filter" }, buildEnd);
 
-      // (b) hold, then (c) the snap
-      const snapAt = buildEnd + cfg.hold;
+      // (b) hold, then (c) the snap.
+      //
+      // The eye's beat is what decides when the snap can happen. It appears on
+      // the build's last frame, plays until its lids close, and takes the whole
+      // decoration layer off with it — and none of that may still be on screen
+      // when the words fly, so the hold has to be at least as long as the eye
+      // plus its exit. `cfg.hold` is the floor under that, and governs on its
+      // own for anything with no eye.
+      const eyeAppear = buildEnd;
+      const lidsClose = eyeAppear + cfg.eyeDwell;
+      const snapAt =
+        buildEnd + (eye ? Math.max(cfg.hold, cfg.eyeDwell + DECO_OUT) : cfg.hold);
+      // Derived from the snap rather than from the eye, so "gone before the
+      // words fly" holds by construction instead of by two numbers happening
+      // to agree. With an eye it lands on `lidsClose`, which is the point;
+      // without one it just tucks the bots off under whatever hold there is.
+      const decoOut = snapAt - DECO_OUT;
       tl.set(lineEls, { overflow: "visible" }, snapAt);
       // Safe to re-origin here: at this point the transform is a pure
       // translation, which transform-origin doesn't affect.
@@ -749,62 +852,117 @@ export default function CaseStudyEnter({
       tl.set(target, { opacity: 1 }, flipEnd);
       tl.to(overlay, { autoAlpha: 0, duration: cfg.handoff }, flipEnd);
 
-      // (d2) the decorations. They fade up with the first characters, drift
-      // outward from half way through the build, and the eye blinks once as the
-      // build lands — then the whole layer leaves with the overlay.
+      // (d2) the decorations.
       //
-      // The drift's DURATION is not tunable and its distance is: it always runs
-      // from its start to the exact frame the overlay dissolves. A tunable
-      // duration would either end early (leaving the bots parked while the
-      // words are still flying) or outlive the overlay — and this timeline's
-      // onComplete is what unlocks the page's scroll, so a 6-second drift
-      // hanging off the end would hold the reader still long after the
-      // entrance had visibly finished. Distance over that fixed window is what
-      // "very slow" actually means here.
-      const overlayGone = flipEnd + cfg.handoff;
-      if (decorations.length) {
-        tl.to(
-          decorations,
-          { opacity: 1, duration: DECO_FADE, ease: "power1.out" },
-          0
-        );
-        const burstAt = buildEnd * cfg.burstStart;
-        const burstDuration = Math.max(0.1, overlayGone - burstAt);
-        decorations.forEach((el) => {
-          // Outward from the centre of the overlay, along the vector to this
-          // element's own centre — so the four of them scatter rather than all
-          // sliding the same way.
-          const rect = el.getBoundingClientRect();
+      // The bots are fireflies: each fades up on its own beat, from a start
+      // tucked in against the headline, and floats outward to the place its
+      // Figma node draws — arriving there exactly as the layer fades off. The
+      // eye is the closing beat, arriving only once the sentence is finished.
+      // Both are gone before the words snap; the plate the snap happens on is
+      // clean, which is the point of the whole arrangement.
+      //
+      // The dot field is not part of any of this. It is the plate, not an
+      // object arriving on it, and has never faded in or out.
+      //
+      // The floats' DURATION is derived and their distance is the tunable:
+      // each runs from its own fade-in to the frame the layer starts leaving.
+      // A tunable duration would either park the bots early or outlive the
+      // decorations they belong to. Distance over that fixed window is what
+      // "slowly" actually means here.
+      if (bots.length) {
+        // Every rect first, then every tween. `fromTo` renders its start state
+        // the moment it is created, so measuring inside the same loop would be
+        // reading boxes with a sibling's transform already applied — harmless
+        // for three independent absolute boxes, but not something to rely on.
+        const botRects = bots.map((el) => el.getBoundingClientRect());
+        bots.forEach((el, i) => {
+          const bot = ENTER_BOTS[i];
+          const at = i * BOT_STAGGER;
+          tl!.to(el, { opacity: 1, duration: BOT_FADE_IN, ease: "power1.out" }, at);
+
+          // Outward from the centre of the overlay along the vector to this
+          // bot's own centre, so the three scatter rather than all sliding the
+          // same way. Negated for the START, since the node's position is
+          // where the float ENDS.
+          const rect = botRects[i];
           const dx =
             rect.left + rect.width / 2 - (overlayRect.left + overlayRect.width / 2);
           const dy =
             rect.top + rect.height / 2 - (overlayRect.top + overlayRect.height / 2);
           const length = Math.hypot(dx, dy) || 1;
-          tl!.to(
+          const d = cfg.burstDistance * decoScale;
+          tl!.fromTo(
             el,
             {
-              x: (dx / length) * cfg.burstDistance * decoScale,
-              y: (dy / length) * cfg.burstDistance * decoScale,
-              rotation: `-=${cfg.burstSpin}`,
-              duration: burstDuration,
+              x: (-dx / length) * d,
+              y: (-dy / length) * d,
+              // Absolute, not `+=`/`-=`: the END has to equal the node's own
+              // angle exactly, and a relative value in a fromTo resolves
+              // against a recorded start rather than the number meant here.
+              rotation: bot.rotation + cfg.burstSpin,
+            },
+            {
+              x: 0,
+              y: 0,
+              rotation: bot.rotation,
+              duration: Math.max(0.1, decoOut - at),
               ease: cfg.burstEase,
             },
-            burstAt
+            at
           );
         });
       }
-      if (eye) {
-        // One blink, on the beat the build finishes and before the snap — the
-        // hold is what it happens inside. A squash of the whole drawing rather
-        // than a lid closing over it: the asset is a single still, so this is
-        // the honest version of a blink until a real one exists.
-        const shut = cfg.blink * 0.45;
-        tl.to(eye, { scaleY: 0.06, duration: shut, ease: "power2.in" }, buildEnd)
-          .to(
-            eye,
-            { scaleY: 1, duration: cfg.blink - shut, ease: "power2.out" },
-            buildEnd + shut
-          );
+
+      if (eye && eyeImg) {
+        // The eye keys off the build, not off a word: it exists to close the
+        // sentence, so it cannot arrive while the sentence is still being
+        // written.
+        //
+        // Playback starts GIF_BLINK_AT before the lids are wanted. At the
+        // default dwell that lands exactly on `eyeAppear`, so the eye fades in
+        // on frame 0 and the entire pupil drift plays before it blinks — which
+        // is the beat the snap is being held for.
+        //
+        // Drag the dwell below that and this goes NEGATIVE relative to the
+        // eye: the GIF starts behind opacity 0 and the eye fades in partway
+        // through the drift. That reads much the same, since the drift is slow
+        // and has no landmark in it, and it buys back the difference in
+        // entrance length. Clamped at 0, where a dwell longer than the build
+        // just lands the blink a little late.
+        const gifStart = Math.max(0, lidsClose - GIF_BLINK_AT);
+        // Derived so that shortening the dwell can't leave the eye still
+        // fading up as its lids come down.
+        const eyeFade = Math.min(0.4, cfg.eyeDwell * 0.4);
+        tl.call(
+          () => {
+            eyeImg.src = eyeSrc;
+          },
+          undefined,
+          gifStart
+        );
+        // Rises into place as it fades, rather than simply appearing: the
+        // sentence has just finished writing itself and the eye is the reply
+        // to it, so it wants to arrive from somewhere. `power2.out` so almost
+        // all the travel is spent in the first third and it settles rather
+        // than glides. The distance is a fraction of its own height, which is
+        // what keeps the move reading the same at 80px and at 25px.
+        tl.fromTo(
+          eye,
+          { opacity: 0, y: ENTER_EYE.h * decoScale * ENTER_EYE.riseRatio },
+          { opacity: 1, y: 0, duration: eyeFade, ease: "power2.out" },
+          eyeAppear
+        );
+      }
+
+      // The exit, on the frame the lids start closing. It finishes at ~the
+      // frame the asset holds fully shut, so the eye is never seen reopening —
+      // it closes and dissolves as one movement, and takes the bots with it.
+      if (decorations.length) {
+        tl.to(
+          decorations,
+          { opacity: 0, duration: DECO_OUT, ease: "power1.in" },
+          decoOut
+        );
       }
 
       // Safe to show the text now: every from() above has already applied its
@@ -880,29 +1038,54 @@ export default function CaseStudyEnter({
           <div
             key={`${bot.left}-${bot.top}`}
             data-enter-bot
-            className="absolute text-bg-light"
+            className="absolute"
             style={{
               left: `${bot.left * 100}%`,
               top: `${bot.top * 100}%`,
               opacity: 0,
             }}
           >
-            <EnterBotGlyph />
+            {/* Figma's own exports, fills and all — see ENTER_BOTS above for
+                why the colour lives in the asset rather than in a token. */}
+            <ThemeSwap
+              light={
+                <img
+                  src="/images/fastrouter/fr-aibot-light.svg"
+                  alt=""
+                  width={72}
+                  height={61}
+                  className="block h-full w-full"
+                />
+              }
+              dark={
+                <img
+                  src="/images/fastrouter/fr-aibot-dark.svg"
+                  alt=""
+                  width={72}
+                  height={61}
+                  className="block h-full w-full"
+                />
+              }
+            />
           </div>
         ))}
+        {/* The wrapper is what GSAP places, drifts and tilts; the <img> inside
+            it stays untouched so assigning its src is unambiguously what
+            starts the GIF. It mounts without one on purpose. The blend mode
+            knocks the asset's baked ground out — see ENTER_EYE_SRC. */}
         <div
           data-enter-eye
-          className="absolute bg-text-primary"
-          style={{
-            opacity: 0,
-            maskImage: EYE_MASK,
-            WebkitMaskImage: EYE_MASK,
-            maskSize: "100% 100%",
-            WebkitMaskSize: "100% 100%",
-            maskRepeat: "no-repeat",
-            WebkitMaskRepeat: "no-repeat",
-          }}
-        />
+          className="absolute mix-blend-multiply dark:mix-blend-screen"
+          style={{ opacity: 0 }}
+        >
+          <img
+            data-enter-eye-img
+            alt=""
+            width={232}
+            height={128}
+            className="block h-full w-full"
+          />
+        </div>
       </div>
 
       <div
@@ -913,14 +1096,14 @@ export default function CaseStudyEnter({
             whichever it finds boxes for. Duplicating the sentence costs
             nothing here - the whole layer is aria-hidden and the real <h1>
             carries the one copy that counts. */}
-        <div className="md:hidden">
+        <div data-enter-overlay-set="base" className="md:hidden">
           {lines.base.map((line) => (
             <div key={line} data-enter-overlay-line>
               {line}
             </div>
           ))}
         </div>
-        <div className="hidden md:block">
+        <div data-enter-overlay-set="md" className="hidden md:block">
           {lines.md.map((line) => (
             <div key={line} data-enter-overlay-line>
               {line}

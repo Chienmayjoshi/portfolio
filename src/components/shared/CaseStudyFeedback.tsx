@@ -61,8 +61,11 @@ interface StoredFeedback extends FeedbackAnswers {
 // that differs: the vertical case studies' row is `rounded-md` (8px, the
 // spec this feature was authored from), the deck slide's frame specifies
 // 12px (`rounded-lg`) — Figma node 7468:22405-22409.
+// Horizontal padding is the other: the stacked row is 24px at every width,
+// the centred variant tightens to 16px below `md` so its three buttons fit
+// one 350px row (Figma node 7494:28289 — 147 + 129 + 50 with 12px gaps).
 const buttonBase =
-  "flex items-center justify-center px-24px py-12px font-ui font-semibold text-[17px] leading-[28px] tracking-[0.085px] whitespace-nowrap";
+  "flex items-center justify-center py-12px font-ui font-semibold text-[17px] leading-[28px] tracking-[0.085px] whitespace-nowrap";
 
 const EMPTY_AGGREGATE: FeedbackAggregateData = {
   count: 0,
@@ -88,9 +91,22 @@ interface CaseStudyFeedbackProps {
    * the row centres, "Let's talk" is the filled primary and quick-feedback
    * and share are accent-outlined siblings at 12px radius, and the caption
    * is dropped because the frame doesn't carry it (the button's own title
-   * tooltip still says it). It stacks LEFT-aligned below `md` rather than
-   * the stacked variant's `sm`, matching the breakpoint its slide flips
-   * alignment on so the card doesn't change twice on the way down.
+   * tooltip still says it).
+   *
+   * It does NOT stack below `md` — the mobile frame (node 7494:28289) keeps
+   * all three buttons on one row: "Let's talk" takes the remaining width,
+   * quick-feedback shrinks to wrap a short "+ Feedback" label, share stays
+   * its fixed 50px. That short label, the 12px gap and the 16px horizontal
+   * padding are what make 350px enough for three buttons; without them the
+   * row would have had to stack, which is why the derived pass this
+   * supersedes did.
+   *
+   * The row's three widths add up to exactly 350 at Figma's 390 frame, and
+   * to less than that below ~351px of viewport — so it is `flex-wrap`, and
+   * "Let's talk" deliberately keeps flexbox's automatic minimum size (no
+   * `min-w-0`) rather than being allowed to squeeze. Its content width IS
+   * the floor, so on a 320px phone the share button drops to a second line
+   * instead of the primary label overflowing its own pill.
    *
    * A variant rather than a second component so the wizard, the aggregate
    * fetch, the editable-response record and the collapse timer keep living
@@ -106,7 +122,9 @@ export default function CaseStudyFeedback({
   variant = "stacked",
 }: CaseStudyFeedbackProps) {
   const centered = variant === "centered";
-  const buttonClass = `${buttonBase} ${centered ? "rounded-lg" : "rounded-md"}`;
+  const buttonClass = `${buttonBase} ${
+    centered ? "rounded-lg px-16px md:px-24px" : "rounded-md px-24px"
+  }`;
   const [stage, setStage] = useState<Stage>("collapsed");
   const [stored, setStored] = useState<StoredFeedback | null>(null);
   const [aggregate, setAggregate] = useState<FeedbackAggregateData | null>(null);
@@ -193,7 +211,7 @@ export default function CaseStudyFeedback({
   // keeps the spec's original emphasis (quick-feedback filled, "Let's talk"
   // secondary on a surface).
   const feedbackButtonClass = centered
-    ? "w-full md:w-auto border border-text-accent text-text-accent"
+    ? "shrink-0 border border-text-accent text-text-accent"
     : "w-full sm:w-[234px] bg-text-accent border border-text-accent text-white";
 
   const letsTalk = (
@@ -201,13 +219,29 @@ export default function CaseStudyFeedback({
       href="mailto:chinmay.joshi02@gmail.com"
       className={`${buttonClass} ${
         centered
-          ? "w-full md:w-[234px] bg-text-accent border border-text-accent text-white"
+          ? "flex-1 md:w-[234px] md:flex-none bg-text-accent border border-text-accent text-white"
           : "w-full sm:w-auto bg-bg-surface border border-text-muted text-text-primary"
       }`}
     >
       Let&rsquo;s talk{centered ? "" : " →"}
     </a>
   );
+
+  // Mobile short forms for the centred variant, per Figma node 7494:28293
+  // ("+ Feedback"). The frame only specifies the un-submitted state; the
+  // received state's "✓ Feedback" is the same abbreviation applied to the
+  // label it swaps to, so the row keeps its measured widths in both states.
+  // Both are markup rather than string state so the desktop label stays the
+  // canonical one and nothing re-renders on resize.
+  const shortLabel = (short: string, full: string) =>
+    centered ? (
+      <>
+        <span className="md:hidden">{short}</span>
+        <span className="hidden md:inline">{full}</span>
+      </>
+    ) : (
+      full
+    );
 
   return (
     <FeedbackContainer>
@@ -230,7 +264,7 @@ export default function CaseStudyFeedback({
             <div
               className={
                 centered
-                  ? "flex w-full flex-col items-start gap-12px md:flex-row md:items-center md:justify-center md:gap-16px"
+                  ? "flex w-full flex-row flex-wrap items-center gap-12px md:flex-nowrap md:justify-center md:gap-16px"
                   : "flex flex-col sm:flex-row gap-16px items-start w-full"
               }
             >
@@ -243,7 +277,9 @@ export default function CaseStudyFeedback({
                   aria-label="Edit feedback"
                   className={`${buttonClass} group relative ${feedbackButtonClass}`}
                 >
-                  <span className="group-hover:invisible">Feedback received</span>
+                  <span className="group-hover:invisible">
+                    {shortLabel("✓ Feedback", "Feedback received")}
+                  </span>
                   <span className="invisible group-hover:visible absolute inset-0 flex items-center justify-center">
                     Edit feedback
                   </span>
@@ -255,7 +291,7 @@ export default function CaseStudyFeedback({
                   title="A couple of quick questions — 30 seconds, max."
                   className={`${buttonClass} ${feedbackButtonClass}`}
                 >
-                  Give quick feedback
+                  {shortLabel("+ Feedback", "Give quick feedback")}
                 </button>
               )}
               {!centered && letsTalk}
