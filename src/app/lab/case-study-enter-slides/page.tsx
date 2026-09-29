@@ -1,7 +1,7 @@
 "use client";
 
 import EnterLabHarness from "@/app/lab/_shared/EnterLabHarness";
-import FastRouterSlides from "@/app/fastrouter-slides/page";
+import SlidesDeck from "@/components/fastrouter-slides/SlidesDeck";
 import { FASTROUTER_ENTER_LINES } from "@/components/shared/caseStudyEnterLines";
 
 // Tuning harness for the entrance onto the SLIDE DECK (/fastrouter-slides).
@@ -32,7 +32,7 @@ export default function CaseStudyEnterSlidesLab() {
       lines={FASTROUTER_ENTER_LINES}
       scrollerSelector="[data-enter-scroller]"
     >
-      <FastRouterSlides />
+      <SlidesDeck variant="full" />
     </EnterLabHarness>
   );
 }

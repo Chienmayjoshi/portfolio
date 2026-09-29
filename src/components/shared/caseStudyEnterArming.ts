@@ -23,8 +23,14 @@ export const ENTER_STORAGE_KEY = "case-study-enter";
  * a flag nobody consumes; this keeps the opt-in explicit and greppable.
  * Adding the vertical /fastrouter here plus a <CaseStudyEnter> in its page is
  * all that route would need — nothing links to it from a card today.
+ *
+ * /deck/fastrouter is the share link for the same deck, and renders the same
+ * CaseStudyEnter, so it belongs here by the rule above. In practice nothing
+ * arms it today: it is reached by pasting the URL, which is exactly the case
+ * that deliberately skips the entrance. Listed so that a card or link pointing
+ * at it later animates without anyone having to rediscover this file.
  */
-export const ENTER_ROUTES = ["/fastrouter-slides"];
+export const ENTER_ROUTES = ["/fastrouter-slides", "/deck/fastrouter"];
 
 /** Called from a card click, immediately before the navigation starts. */
 export function armCaseStudyEnter(href: string) {

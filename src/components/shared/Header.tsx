@@ -21,6 +21,22 @@ import {
 // machinery HeaderProvider's pill already has.
 const CASE_STUDY_ROUTE_PREFIXES = ["/fastrouter", "/analytics", "/extensions"];
 
+// /deck/* is the access-gated SHARE link for a case study — one deck, sent to
+// one hiring team, and the whole point of it is that it contains no route into
+// the rest of the portfolio. So this prefix strips every navigating affordance
+// from the header: the Back link, the wordmark, the site-nav pill, and the
+// mobile hamburger (the one escape hatch that is always live on touch).
+//
+// It renders the header SHELL regardless, rather than returning null. Two
+// things break without the element: the deck measures
+// `document.querySelector("header")` and pulls itself up by that height
+// (SlidesDeck.tsx), so a missing element leaves it stuck on the 64px fallback
+// forever; and the chapter-intro slides invert the header's chrome through
+// `useHeaderInvertSurface`, which needs something to stamp. ThemeToggle stays
+// for the same reason it exists everywhere else — the reader still gets to
+// pick light or dark, and it navigates nowhere.
+const SHARE_ROUTE_PREFIX = "/deck";
+
 // TEMPORARY inline icon — per direct instruction, new icons should use
 // Phosphor (`@phosphor-icons/react`) going forward, but that package isn't
 // installed yet (`npm install @phosphor-icons/react` hit the same
@@ -148,9 +164,16 @@ export default function Header() {
   const { invertSurface } = useHeaderInvertSurface();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isSharedDeck = pathname.startsWith(SHARE_ROUTE_PREFIX);
   const isCaseStudyPage = CASE_STUDY_ROUTE_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix)
   );
+  // On a share link the centre slot carries IDENTITY only, never navigation:
+  // the case-study pill (logo · business · domain) is a label, but the default
+  // branch it falls back to is the site nav, which is a way out. So the whole
+  // slot is withheld until the deck supplies a pill — which it does from the
+  // second slide on (SegmentedRail nulls it on "hero" alone).
+  const showCentreSlot = isSharedDeck ? Boolean(caseStudyPill) : true;
 
   return (
     // `chapter-intro-invert` (globals.css) re-scopes this subtree's color
@@ -215,7 +238,12 @@ export default function Header() {
           exactly this failure mode. Explicit placement makes each child's
           column fixed regardless of a sibling's display state. */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center px-20px pt-32px pb-8px md:px-40px md:py-12px">
-        {isCaseStudyPage ? (
+        {isSharedDeck ? (
+          // Empty, but present and explicitly placed — the grid note above
+          // applies: a missing col-start-1 child lets the right icon group
+          // auto-place into the middle track.
+          <div className="col-start-1" />
+        ) : isCaseStudyPage ? (
           <Link
             href="/"
             className="col-start-1 flex items-center gap-8px justify-self-start font-ui text-[16px] text-text-primary tracking-[0.08px] hover:text-text-accent transition-colors shrink-0"
@@ -236,8 +264,15 @@ export default function Header() {
           </Link>
         )}
 
+        {showCentreSlot && (
         <motion.nav
           layout
+          // Fades in only on a share link, where the slot mounts late (it has
+          // nothing to show on the hero slide) instead of morphing width from
+          // the site nav the way it does everywhere else.
+          {...(isSharedDeck
+            ? { initial: { opacity: 0 }, animate: { opacity: 1 } }
+            : {})}
           transition={{ layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } }}
           aria-label="Site"
           className="col-start-2 relative hidden items-center justify-self-center overflow-hidden rounded-full border border-border-default bg-bg-surface px-24px py-12px font-ui text-[16px] text-text-primary tracking-[0.08px] transition-colors duration-300 md:flex"
@@ -304,6 +339,7 @@ export default function Header() {
             )}
           </AnimatePresence>
         </motion.nav>
+        )}
 
         <div className="col-start-3 flex items-center gap-12px justify-self-end">
           <ThemeToggle />
@@ -314,6 +350,7 @@ export default function Header() {
               (size-40px rounded-lg border-border-default bg-bg-surface)
               rather than inventing a second style, since Figma shows both
               buttons sharing identical treatment. */}
+          {!isSharedDeck && (
           <div className="relative flex md:hidden">
             <button
               type="button"
@@ -370,6 +407,7 @@ export default function Header() {
               )}
             </AnimatePresence>
           </div>
+          )}
         </div>
       </div>
     </header>
