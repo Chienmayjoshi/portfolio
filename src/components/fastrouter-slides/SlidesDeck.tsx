@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import FastRouterLogomark from "@/components/fastrouter/FastRouterLogomark";
-import SegmentedRail from "@/components/fastrouter-slides/SegmentedRail";
+import SegmentedRail, {
+  type Chapter,
+} from "@/components/fastrouter-slides/SegmentedRail";
 import CaseStudyEnter from "@/components/shared/CaseStudyEnter";
 import { FASTROUTER_ENTER_LINES } from "@/components/shared/caseStudyEnterLines";
 import {
@@ -39,6 +41,61 @@ import ThanksSlide from "@/components/fastrouter-slides/ThanksSlide";
 import ReadNextSlide from "@/components/fastrouter-slides/ReadNextSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { useHeaderInvertSurface } from "@/components/shared/HeaderProvider";
+
+// FastRouter's chapter table — moved here from SegmentedRail.tsx when that
+// component's CHAPTERS/BUILT_CHAPTER_IDS consts became required props
+// (generalized for UltraAI reuse; see SegmentedRail.tsx's note on the
+// `chapters` prop). Content unchanged, so this is a no-op for FastRouter.
+//
+// 8 chapters, matching the doc's bundling rule: Impact/Reflections/
+// Key Takeaways/Close all fold into one "Closing" segment, same mechanism
+// as Council's internal fill. hero/problem/product have real content —
+// every other chapter is listed (so the rail always shows the full
+// 8-chapter shape) but marked not-yet-built below.
+//
+// Numbering/labels come from the Figma "floating section pill" scheme
+// (nodes 7255:7281 / 7249:6818 / 7275:427): sequential from Hero=01, reworded
+// labels. The full nine-label list is now confirmed in one place — node
+// 7400:30219's expanded mobile panel spells out every section, so this table
+// no longer has to hold guessed copy for the sections that lacked a frame.
+// Two changes came from it, both confirmed directly: "Council" -> "LLM
+// Council", and the single bundled "Closing" chapter split into "Reflections"
+// and "Outcomes" (both unnumbered bookends, same as Hero). That takes the
+// desktop rail from 8 ticks to 9 — expected, and accepted rather than letting
+// the mobile panel keep its own divergent label set (the two label sets were
+// deliberately converged onto this table once already; splitting them again
+// would undo that).
+//
+// A tenth tick, "Closing", was added 2026-09-07 by direct instruction when the
+// deck's thanks-for-reading card (Figma 7468:21634) was built: it is neither a
+// reflection nor an outcome, and folding it into either would have mislabelled
+// whichever tick it borrowed. Unnumbered like the other two bookends. The
+// frame's own decorative rail mock draws 8 ticks — this table, not that mock,
+// is the tick count.
+const FASTROUTER_CHAPTERS: Chapter[] = [
+  { id: "hero", label: "Introduction", number: "01" },
+  { id: "problem", label: "The Problem", number: "02" },
+  { id: "product", label: "The Product", number: "03" },
+  { id: "features", label: "Feature Overview", number: "04" },
+  { id: "council", label: "LLM Council", number: "05" },
+  { id: "observability", label: "Observability", number: "06" },
+  { id: "evaluations", label: "Evaluations", number: "07" },
+  { id: "reflections", label: "Reflections", number: null },
+  { id: "outcomes", label: "Outcomes", number: null },
+  { id: "closing", label: "Closing", number: null },
+];
+
+const FASTROUTER_BUILT_CHAPTER_IDS = new Set([
+  "hero",
+  "problem",
+  "product",
+  "features",
+  "council",
+  "observability",
+  "evaluations",
+  "reflections",
+  "closing",
+]);
 
 // Per-slide REACT KEY / DOM-anchor ids — these must be unique, so the two
 // slides that both belong to the Council chapter carry distinct ids
@@ -977,6 +1034,8 @@ export default function SlidesDeck({ variant = "full" }: SlidesDeckProps) {
       )}
 
       <SegmentedRail
+        chapters={FASTROUTER_CHAPTERS}
+        builtChapterIds={FASTROUTER_BUILT_CHAPTER_IDS}
         activeId={deck.slideChapterIds[activeIndex]}
         fill={railFill}
         pillContext={pillContext}

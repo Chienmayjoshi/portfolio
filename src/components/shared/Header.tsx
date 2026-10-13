@@ -19,7 +19,12 @@ import {
 // ever depends on which page you're on, never on scroll/slide position
 // within a page, so there's no need for the heavier per-page-opt-in
 // machinery HeaderProvider's pill already has.
-const CASE_STUDY_ROUTE_PREFIXES = ["/fastrouter", "/analytics", "/extensions"];
+const CASE_STUDY_ROUTE_PREFIXES = [
+  "/fastrouter",
+  "/ultraai",
+  "/analytics",
+  "/extensions",
+];
 
 // /deck/* is the access-gated SHARE link for a case study — one deck, sent to
 // one hiring team, and the whole point of it is that it contains no route into

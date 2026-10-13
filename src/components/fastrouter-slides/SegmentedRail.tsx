@@ -13,7 +13,7 @@ import {
   type CaseStudyPill,
 } from "@/components/shared/HeaderProvider";
 
-interface Chapter {
+export interface Chapter {
   id: string;
   label: string;
   /** null = bare/unnumbered (bookend chapters — Hero, Closing) */
@@ -45,30 +45,16 @@ interface Chapter {
 // whichever tick it borrowed. Unnumbered like the other two bookends. The
 // frame's own decorative rail mock draws 8 ticks — this table, not that mock,
 // is the tick count.
-const CHAPTERS: Chapter[] = [
-  { id: "hero", label: "Introduction", number: "01" },
-  { id: "problem", label: "The Problem", number: "02" },
-  { id: "product", label: "The Product", number: "03" },
-  { id: "features", label: "Feature Overview", number: "04" },
-  { id: "council", label: "LLM Council", number: "05" },
-  { id: "observability", label: "Observability", number: "06" },
-  { id: "evaluations", label: "Evaluations", number: "07" },
-  { id: "reflections", label: "Reflections", number: null },
-  { id: "outcomes", label: "Outcomes", number: null },
-  { id: "closing", label: "Closing", number: null },
-];
-
-const BUILT_CHAPTER_IDS = new Set([
-  "hero",
-  "problem",
-  "product",
-  "features",
-  "council",
-  "observability",
-  "evaluations",
-  "reflections",
-  "closing",
-]);
+//
+// Both this table and BUILT_CHAPTER_IDS moved from module-level consts to
+// required props once UltraAI became the second case study to use this
+// mechanic (CLAUDE.md: every case study after FastRouter uses the slide-deck
+// format) — generalizing here, rather than forking a second ~830-line copy,
+// per the same "build once, don't fork per case study" rule ScreenshotFrame
+// already follows. Every other prop below was already generic (pillContext,
+// onNavigate, theme, variant); this was the only FastRouter-specific part.
+// FastRouter's own SlidesDeck.tsx passes this exact table unchanged, so this
+// change is behaviorally a no-op there.
 
 // Every icon here is an inline SVG rather than an icon-package import — this
 // repo has no icon dependency at all (see Header.tsx's note:
@@ -173,10 +159,11 @@ function CloseIcon() {
 // as invisible sizers inside the pill's label slot (see the pill markup), which
 // is what gives the pill ONE intrinsic width: the longest label wins, and the
 // pill can't resize as the reader scrolls between sections or opens the panel.
-// Derived from CHAPTERS rather than hardcoded, so another case study with
-// longer labels gets a correspondingly wider pill for free — Figma's 186px is
-// FastRouter's measurement, not a universal constant (see the pill notes).
-const PILL_LABEL_SLOTS = [...CHAPTERS.map((c) => c.label), "Close"];
+// Derived from the `chapters` prop rather than hardcoded, so another case
+// study with longer labels gets a correspondingly wider pill for free —
+// Figma's 186px is FastRouter's measurement, not a universal constant (see
+// the pill notes). Built inside the component now (below), since `chapters`
+// is a prop, not a module-level const.
 
 // Panel rows fade/rise in sequence rather than all at once, so the list reads
 // as unrolling out from behind the pill rather than appearing whole. Exit
@@ -240,6 +227,11 @@ const RAIL_COLORS: Record<
 };
 
 interface SegmentedRailProps {
+  /** This case study's chapter table — see the CHAPTERS note above. */
+  chapters: Chapter[];
+  /** Chapter ids that have real built slides — everything else renders
+   * inert (no click, pill still shows on hover). See the CHAPTERS note. */
+  builtChapterIds: Set<string>;
   activeId: string;
   /** How much of the ACTIVE chapter has been read, 0-1. The rail draws one
    * tick per chapter, but a chapter can be nine slides long, so without this
@@ -351,6 +343,8 @@ interface SegmentedRailProps {
 // shape doesn't change as content is added) but are inert: no click,
 // pill still shows on hover so a hovering reader knows what's coming.
 export default function SegmentedRail({
+  chapters,
+  builtChapterIds,
   activeId,
   fill = 1,
   pillContext,
@@ -358,6 +352,7 @@ export default function SegmentedRail({
   theme = "on-dark",
   variant = "rail",
 }: SegmentedRailProps) {
+  const PILL_LABEL_SLOTS = [...chapters.map((c) => c.label), "Close"];
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [lastHoveredIndex, setLastHoveredIndex] = useState(0);
   const [pillOffset, setPillOffset] = useState(0);
@@ -392,8 +387,8 @@ export default function SegmentedRail({
   // ReadNextSlide.tsx already uses.
   const { scrollYProgress } = useScroll();
 
-  const activeIndex = CHAPTERS.findIndex((c) => c.id === activeId);
-  const activeChapter = CHAPTERS[activeIndex];
+  const activeIndex = chapters.findIndex((c) => c.id === activeId);
+  const activeChapter = chapters[activeIndex];
   // Mobile status pill reads the same CHAPTERS copy as the desktop rail now
   // that the two label sets have converged (Figma reworded them to match).
   const activeLabel = activeChapter.label;
@@ -425,7 +420,7 @@ export default function SegmentedRail({
   // The pill is always mounted and shows/hides by opacity, so `hoveredIndex`
   // going null can't leave it with nothing to render mid-fade. It keeps the
   // last chapter the pointer was over until the pointer picks a new one.
-  const pillChapter = CHAPTERS[lastHoveredIndex];
+  const pillChapter = chapters[lastHoveredIndex];
 
   return (
     <>
@@ -479,8 +474,8 @@ export default function SegmentedRail({
           <span>{pillChapter.label}</span>
         </div>
 
-        {CHAPTERS.map((chapter, index) => {
-          const isBuilt = BUILT_CHAPTER_IDS.has(chapter.id);
+        {chapters.map((chapter, index) => {
+          const isBuilt = builtChapterIds.has(chapter.id);
           // Chapters before the active one are read (full), after it unread
           // (empty), and the active one fills by `fill` — so a chapter holding
           // nine slides advances a ninth per slide rather than reading as
@@ -675,8 +670,8 @@ export default function SegmentedRail({
                     exit="closed"
                     className="flex flex-col py-12px"
                   >
-                    {CHAPTERS.map((chapter) => {
-                      const isBuilt = BUILT_CHAPTER_IDS.has(chapter.id);
+                    {chapters.map((chapter) => {
+                      const isBuilt = builtChapterIds.has(chapter.id);
                       const isActive = chapter.id === activeId;
                       return (
                         <motion.button
