@@ -126,7 +126,7 @@ function Callout({ d, m, eyebrow, value }: CalloutProps) {
 function Screenshot({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="absolute left-0 top-0 overflow-hidden rounded-2xl border-2 border-white shadow-[0_0_2.5px_rgba(0,0,0,0.1),0_0_0.5px_rgba(0,0,0,0.1)]"
+      className="absolute left-0 top-0 overflow-hidden rounded-2xl border-2 border-bg-surface dark:border-text-muted shadow-[0_0_2.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent),0_0_0.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent)] dark:shadow-none"
       style={{ width: IMG_W, height: IMG_H }}
     >
       {children}

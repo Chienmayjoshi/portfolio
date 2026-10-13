@@ -1,13 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+} from "react";
 import SegmentedRail, {
   type Chapter,
 } from "@/components/fastrouter-slides/SegmentedRail";
 import UltraAILogomark from "@/components/ultraai/UltraAILogomark";
 import HeroSlide from "@/components/ultraai/HeroSlide";
 import ProblemSlide from "@/components/ultraai/ProblemSlide";
+import ShellIntroSlide from "@/components/ultraai/ShellIntroSlide";
+import RejectedDirectionSlide from "@/components/ultraai/RejectedDirectionSlide";
+import ShippedDirectionSlide from "@/components/ultraai/ShippedDirectionSlide";
+import {
+  ShellDecision01Slide,
+  ShellDecision02Slide,
+  ShellDecision03Slide,
+  ShellDecision05Slide,
+} from "@/components/ultraai/ShellDecisionSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
+import { useHeaderInvertSurface } from "@/components/shared/HeaderProvider";
 
 const HEADER_HEIGHT_FALLBACK_PX = 64;
 
@@ -39,13 +55,66 @@ const ULTRAAI_CHAPTERS: Chapter[] = [
   { id: "reflections", label: "Reflections", number: null },
   { id: "closing", label: "Closing", number: null },
 ];
-const ULTRAAI_BUILT_CHAPTER_IDS = new Set(["hero", "problem"]);
+const ULTRAAI_BUILT_CHAPTER_IDS = new Set([
+  "hero",
+  "problem",
+  "shell",
+]);
 
-const SLIDE_IDS = ["hero", "problem"] as const;
-const SLIDE_COMPONENTS = [HeroSlide, ProblemSlide];
-// 1:1 with SLIDE_IDS for now — every chapter is exactly one slide so far,
-// so `fill` (how much of the active chapter is read) stays 1 throughout.
-const SLIDE_CHAPTER_IDS = ["hero", "problem"] as const;
+// "product" is skipped on purpose (assets still in progress), so the deck
+// goes problem -> shell and the rail's product tick stays inert.
+const SLIDE_IDS = [
+  "hero",
+  "problem",
+  "shell",
+  "shell-rejected",
+  "shell-shipped",
+  "shell-decision-01",
+  "shell-decision-02",
+  "shell-decision-03",
+  "shell-decision-05",
+] as const;
+// `active` is only passed on the pointer deck, to slides that run something
+// while on screen (every slide stays mounted and stacked); the rest ignore it.
+const SLIDE_COMPONENTS: ComponentType<{ active?: boolean }>[] = [
+  HeroSlide,
+  ProblemSlide,
+  ShellIntroSlide,
+  RejectedDirectionSlide,
+  ShippedDirectionSlide,
+  ShellDecision01Slide,
+  ShellDecision02Slide,
+  ShellDecision03Slide,
+  ShellDecision05Slide,
+];
+// The Shell's intro, rejected and shipped direction slides share the "shell" tick;
+// `fill` below is how much of the active chapter has been read.
+const SLIDE_CHAPTER_IDS = [
+  "hero",
+  "problem",
+  "shell",
+  "shell",
+  "shell",
+  "shell",
+  "shell",
+  "shell",
+  "shell",
+] as const;
+// How each slide's surface relates to the global toggle, deciding whether the
+// rail (and the header) read light or dark over it — same meaning as
+// fastrouter-slides/SlidesDeck.tsx's SLIDE_RAIL_MODE. "invert" is a
+// `chapter-intro-invert` feature opener, the opposite of the toggle.
+const SLIDE_RAIL_MODE = [
+  "follow",
+  "follow",
+  "invert",
+  "follow",
+  "follow",
+  "follow",
+  "follow",
+  "follow",
+  "follow",
+] as const;
 
 // Ported from fastrouter-slides/SlidesDeck.tsx, mechanism unchanged: a tall
 // scroll track (one container-height per slide) drives a STICKY pinned
@@ -65,6 +134,7 @@ export default function SlidesDeck() {
   const [isTouch, setIsTouch] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const { isDark } = useTheme();
+  const { setInvertSurface } = useHeaderInvertSurface();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -78,6 +148,14 @@ export default function SlidesDeck() {
   useEffect(() => {
     activeIndexRef.current = activeIndex;
   }, [activeIndex]);
+
+  // Header chrome follows an inverted slide on the pointer deck only — on the
+  // touch stack it sits over whatever is scrolled to the top, not necessarily
+  // the active slide (same reasoning as fastrouter-slides/SlidesDeck.tsx).
+  useEffect(() => {
+    setInvertSurface(!isTouch && SLIDE_RAIL_MODE[activeIndex] === "invert");
+    return () => setInvertSurface(false);
+  }, [activeIndex, isTouch, setInvertSurface]);
 
   useEffect(() => {
     const headerEl = document.querySelector("header");
@@ -301,6 +379,13 @@ export default function SlidesDeck() {
     };
   }, [isTouch]);
 
+  // k/n on the k-th of n slides in the chapter, so every chapter reaches 1 on
+  // its own last slide (same rule as fastrouter-slides' railFill).
+  const chapterId = SLIDE_CHAPTER_IDS[activeIndex];
+  const chapterStart = SLIDE_CHAPTER_IDS.indexOf(chapterId);
+  const chapterCount = SLIDE_CHAPTER_IDS.filter((c) => c === chapterId).length;
+  const railFill = (activeIndex - chapterStart + 1) / chapterCount;
+
   const pillContext = {
     logo: <UltraAILogomark />,
     business: "B2C",
@@ -364,7 +449,7 @@ export default function SlidesDeck() {
                         visibility: index === 0 ? "visible" : "hidden",
                       }}
                     >
-                      <Slide />
+                      <Slide active={index === activeIndex} />
                     </div>
                   );
                 })}
@@ -398,10 +483,14 @@ export default function SlidesDeck() {
         chapters={ULTRAAI_CHAPTERS}
         builtChapterIds={ULTRAAI_BUILT_CHAPTER_IDS}
         activeId={SLIDE_CHAPTER_IDS[activeIndex]}
-        fill={1}
+        fill={railFill}
         pillContext={pillContext}
         onNavigate={navigateToChapter}
-        theme={isDark ? "on-dark" : "on-light"}
+        theme={
+          (SLIDE_RAIL_MODE[activeIndex] === "invert") === isDark
+            ? "on-light"
+            : "on-dark"
+        }
         variant={isTouch ? "pill" : "rail"}
       />
     </>
