@@ -2,6 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  type MotionValue,
+} from "motion/react";
 import GridDepthLayer from "@/components/shared/GridDepthLayer";
 import ThemeAwareVideo from "@/components/shared/ThemeAwareVideo";
 import ThemeSwap from "@/components/shared/ThemeSwap";
@@ -43,7 +51,7 @@ interface ShellDecisionLayoutProps {
   chapter?: string;
   /** One line, or two with a hard break on desktop. */
   headline: string | [string, string];
-  chose: string;
+  chose: React.ReactNode;
   gaveUp: string;
   why: string;
   /** The right-hand (mobile: middle) visual, sized by its own classes. */
@@ -115,9 +123,9 @@ function ShellDecisionLayout({
                 <p className="font-mono text-[13px] text-text-muted uppercase leading-[18px] tracking-[0.78px]">
                   {b.label}
                 </p>
-                <p className="font-ui font-normal text-[16px] text-text-primary leading-[28px] tracking-[0.08px]">
+                <div className="font-ui font-normal text-[16px] text-text-primary leading-[28px] tracking-[0.08px]">
                   {b.text}
-                </p>
+                </div>
               </div>
             ))}
           </div>
@@ -767,6 +775,322 @@ export function VedaDecision02Slide() {
       gaveUp="Charging a credit for every action, including the draw."
       why="Free draws give people a reason to come back every day. The credit sits only on the interpretation, the one moment worth paying for."
       visual={<VedaSpreadsVisual />}
+    />
+  );
+}
+
+// --------------------------------------------------------- Paywall decision 01
+//
+// Figma desktop 7903:156032 ("paywall -decision 01"); no mobile frame, so
+// mobile follows the other decisions (header, visual, rationale).
+//
+// The visual is a rotating three-up: the centre frame is 254x550 and the two
+// behind it 231x500 at half opacity, tucked 32 in from each edge of the 652x550
+// stage. Every 3 seconds the ring advances — the right frame comes to the
+// centre, the centre goes left, the left goes round behind to the right — so
+// each template takes the centre in turn. Order in Figma: sheet (centre), then
+// feature paywall (left), full subscribe (right); it rotates in that order of
+// appearance: sheet -> feature -> full.
+//
+// All three are the same 254x550 box, scaled 0.909 (231/254 = 500/550) for the
+// sides rather than resized, so the whole move is transform + opacity and
+// runs on the compositor. Positions are percentages of the stage, so it
+// scales into the mobile slot. Clicking a side frame brings it to the
+// centre and restarts the 3s wait. Autoplay runs only while the slide is the
+// deck's active one and not under reduced motion.
+//
+// Frame border is 4px in the shared mockup-frame tokens (bg-surface, text-muted
+// in dark); the centre frame has a soft lift (Figma's 0 22 35 at 56% read as harsh on
+// the page — now 0 10 28 at 14%), the sides the standard hairline one. In dark mode shadows are off, as on the other frames.
+//
+// Assets: the three paywall exports (ua_paywallsheet / featurepaywall /
+// fulldrawer, light and dark, 1170x2532, in Downloads when supplied) at 762px
+// wide q88 as ua-paywall-{sheet,feature,full}[-dark].webp.
+const PAYWALL_INTERVAL_MS = 3000;
+
+const PAYWALL_FRAMES = [
+  {
+    key: "sheet",
+    alt: "Bottom sheet paywall: Mangal Dosha Check with Unlock with Pro",
+  },
+  {
+    key: "feature",
+    alt: "Feature paywall: Full Planetary Transits with what you'll see and Unlock with Pro",
+  },
+  {
+    key: "full",
+    alt: "Full subscribe screen: Unlock Full Access with Annual and Weekly plans",
+  },
+] as const;
+
+// The frames are not three slots that swap state. They sit on a ring and one
+// continuous number, `progress`, moves them all: each frame's distance `d`
+// from the centre is (index - progress) wrapped into [-1.5, 1.5), and its
+// position, scale and opacity are plain functions of |d|. So a step is a real
+// slide — everything travels left together; the frame leaving on the left
+// fades out as it goes, and the one entering from the right fades in as it
+// arrives — and the wrap from far left to far right happens at |d| = 1.5,
+// where it is fully transparent, so it is never seen. The earlier version
+// animated three fixed slots, which read as the centre frame shrinking and
+// dimming while another popped up.
+//
+//   |d|   0      1       1.5
+//   x     centre side    edge (one step further)
+//   scale 1      0.909   0.82
+//   opac. 1      0.5     0
+//
+// x is in percent of a frame's own width (254): centre 78.35, one step 70.25.
+const PW_STEP = 70.25;
+const PW_CENTER_X = 78.35;
+const PW_EASE: [number, number, number, number] = [0.65, 0, 0.35, 1];
+
+function pwDistance(index: number, progress: number, n: number) {
+  const v = index - progress;
+  return ((((v + 1.5) % n) + n) % n) - 1.5;
+}
+
+function PaywallFrame({
+  index,
+  total,
+  progress,
+  frame,
+  onSelect,
+}: {
+  index: number;
+  total: number;
+  progress: MotionValue<number>;
+  frame: (typeof PAYWALL_FRAMES)[number];
+  onSelect: (index: number) => void;
+}) {
+  const d = useTransform(progress, (p) => pwDistance(index, p, total));
+  const x = useTransform(d, (v) => `${PW_CENTER_X + PW_STEP * v}%`);
+  const y = useTransform(d, (v) => `${2.36 * Math.min(Math.abs(v), 1)}%`);
+  const scale = useTransform(d, (v) => {
+    const a = Math.abs(v);
+    return a <= 1 ? 1 - 0.091 * a : 0.909 - 0.178 * (a - 1);
+  });
+  const opacity = useTransform(d, (v) => {
+    const a = Math.abs(v);
+    return a <= 1 ? 1 - 0.5 * a : Math.max(0, 0.5 * (1 - (a - 1) / 0.5));
+  });
+  const zIndex = useTransform(d, (v) => 10 - Math.round(Math.abs(v) * 4));
+  // How central the frame is, 1 at the centre to 0 one step out: drives the
+  // deep drop shadow, so it travels with the slide instead of snapping.
+  const centred = useTransform(d, (v) => Math.max(0, 1 - Math.abs(v)));
+
+  return (
+    <motion.div
+      style={{ x, y, scale, opacity, zIndex }}
+      className="absolute left-0 top-0 h-full w-[38.96%]"
+    >
+      {/* The centre frame's soft lift (subtle in light mode). Its own layer because the
+          frame below clips overflow; off in dark mode like the other frames. */}
+      <motion.span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-[10px] shadow-[0_10px_28px_color-mix(in_srgb,var(--color-text-primary)_14%,transparent)] md:rounded-2xl dark:hidden"
+        style={{ opacity: centred }}
+      />
+      <button
+        type="button"
+        aria-label={`Show ${frame.key} paywall`}
+        onClick={() => onSelect(index)}
+        className="relative block h-full w-full cursor-pointer overflow-hidden rounded-[10px] border-4 border-bg-surface shadow-[0_0_2.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent),0_0_0.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent)] md:rounded-2xl dark:border-text-muted dark:shadow-none"
+      >
+        <ThemeSwap
+          light={
+            <Image
+              src={`/images/ultraai/ua-paywall-${frame.key}.webp`}
+              alt={frame.alt}
+              fill
+              sizes="(min-width: 768px) 254px, 140px"
+              className="object-cover object-top"
+            />
+          }
+          dark={
+            <Image
+              src={`/images/ultraai/ua-paywall-${frame.key}-dark.webp`}
+              alt={frame.alt}
+              fill
+              sizes="(min-width: 768px) 254px, 140px"
+              className="object-cover object-top"
+            />
+          }
+        />
+      </button>
+    </motion.div>
+  );
+}
+
+function PaywallCarousel({ active = true }: { active?: boolean }) {
+  const progress = useMotionValue(0);
+  const [tick, setTick] = useState(0);
+  const reduceMotion = useReducedMotion();
+  const n = PAYWALL_FRAMES.length;
+
+  // One step every 3 seconds, the wait starting when the previous move ends
+  // (and restarting after a click).
+  useEffect(() => {
+    if (!active || reduceMotion) return;
+    let controls: ReturnType<typeof animate> | null = null;
+    const id = window.setTimeout(() => {
+      controls = animate(progress, Math.round(progress.get()) + 1, {
+        duration: 0.9,
+        ease: PW_EASE,
+      });
+      controls.then(() => setTick((t) => t + 1));
+    }, PAYWALL_INTERVAL_MS);
+    return () => {
+      window.clearTimeout(id);
+      controls?.stop();
+    };
+  }, [active, reduceMotion, tick, progress]);
+
+  const select = (index: number) => {
+    // Take the short way round to the clicked frame.
+    const target =
+      progress.get() + pwDistance(index, Math.round(progress.get()), n);
+    if (reduceMotion) {
+      progress.set(Math.round(target));
+      setTick((t) => t + 1);
+      return;
+    }
+    animate(progress, Math.round(target), { duration: 0.9, ease: PW_EASE }).then(
+      () => setTick((t) => t + 1)
+    );
+  };
+
+  return (
+    <div className="relative aspect-[652/550] w-full md:w-[652px]">
+      {PAYWALL_FRAMES.map((f, i) => (
+        <PaywallFrame
+          key={f.key}
+          index={i}
+          total={n}
+          progress={progress}
+          frame={f}
+          onSelect={select}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function PaywallDecision01Slide({ active }: { active?: boolean }) {
+  return (
+    <ShellDecisionLayout
+      id="paywall-decision-01"
+      number="01"
+      chapter="Paywall"
+      headline={["Three templates, real", "intent trigger"]}
+      chose="Every paywall uses one of three formats: a bottom sheet for one blocked action, a feature paywall for a bigger ask, or a full subscribe screen. None of them appear until someone hits a real wall."
+      gaveUp="One upgrade screen used everywhere, and prompts shown before someone has anything to lose."
+      why="A paywall that appears too early feels like an interruption. One that appears right after a real wall feels fair, because the person already knows what they’re missing."
+      visual={<PaywallCarousel active={active} />}
+    />
+  );
+}
+
+// --------------------------------------------------------- Paywall decision 02
+//
+// Figma desktop 7919:164389 ("paywall -decision 2"); no mobile frame, so
+// mobile follows the other decisions. The visual is a 590x597 stack of five
+// cropped screens, one per place the paywall appears, in two staggered
+// columns: left (x 2, 282 wide) feature detail, chat credits ran out, the
+// chip on an expert's home; right (x 308, 280 wide, centred vertically)
+// profile page, right after onboarding. Each is a crop at its export's natural
+// 1170-wide ratio (232 / 195 / 118 / 185 / 231 tall), in a 4px token frame
+// with a subtle shadow in light mode (Figma's 0 5 7.5 at 35% read as harsh on
+// the page — softened to a 6% drop plus the usual hairline; off in dark). Percentages of the stage, so it scales into the mobile slot.
+//
+// The "Chose" block here is a sentence plus a two-column bulleted list, in
+// Figma's row-major order: detail page, credits run out / onboarding, profile /
+// the home-screen chip. One column on mobile.
+//
+// Assets: ua-paywall-places-{detail,credits,onboarding,profile,chip}[-dark]
+// .webp from ua_paywallfeaturedetail / datacreditranout / rightafteronboarding
+// / ontheprofilepage / chiponanexperthomescreen, light and dark, at 840px
+// wide (3x), q88.
+const PW_PLACES_W = 590;
+const PW_PLACES_H = 597;
+
+const PW_PLACES = [
+  { key: "detail", x: 2, y: 2, w: 282, h: 232, alt: "A feature's detail page with the Unlock Full Reading button" },
+  { key: "credits", x: 2, y: 258, w: 282, h: 195, alt: "Chat usage limit reached with a Get Pro button" },
+  { key: "chip", x: 2, y: 477, w: 282, h: 118, alt: "A Get Pro chip on an expert's home screen" },
+  { key: "profile", x: 308, y: 78.5, w: 280, h: 185, alt: "Profile page with the Unlock UltraAI PRO banner" },
+  { key: "onboarding", x: 308, y: 288.5, w: 280, h: 231, alt: "The paywall shown right after onboarding" },
+] as const;
+
+function PaywallPlacesVisual() {
+  const pct = (n: number, of: number) => `${((n / of) * 100).toFixed(3)}%`;
+  return (
+    <div className="relative aspect-[590/597] w-full md:w-[590px]">
+      {PW_PLACES.map((p) => (
+        <div
+          key={p.key}
+          className="absolute overflow-hidden rounded-[10px] border-4 border-bg-surface shadow-[0_2px_6px_color-mix(in_srgb,var(--color-text-primary)_6%,transparent),0_0_2.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent),0_0_0.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent)] md:rounded-2xl dark:border-text-muted dark:shadow-none"
+          style={{
+            left: pct(p.x, PW_PLACES_W),
+            top: pct(p.y, PW_PLACES_H),
+            width: pct(p.w, PW_PLACES_W),
+            height: pct(p.h, PW_PLACES_H),
+          }}
+        >
+          <ThemeSwap
+            light={
+              <Image
+                src={`/images/ultraai/ua-paywall-places-${p.key}.webp`}
+                alt={p.alt}
+                fill
+                sizes="(min-width: 768px) 282px, 170px"
+                className="object-cover object-top"
+              />
+            }
+            dark={
+              <Image
+                src={`/images/ultraai/ua-paywall-places-${p.key}-dark.webp`}
+                alt={p.alt}
+                fill
+                sizes="(min-width: 768px) 282px, 170px"
+                className="object-cover object-top"
+              />
+            }
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function PaywallDecision02Slide() {
+  const places = [
+    "A feature’s detail page",
+    "When chat credits run out",
+    "Right after onboarding",
+    "On the profile page",
+    "A chip on an expert’s home screen",
+  ];
+  return (
+    <ShellDecisionLayout
+      id="paywall-decision-02"
+      number="02"
+      chapter="Paywall"
+      headline={["The paywall shows in", "five places only"]}
+      chose={
+        <>
+          The paywall appears in only five places:
+          <ul className="mt-8px grid list-disc grid-cols-1 gap-x-8px gap-y-8px ps-[24px] marker:text-text-primary md:grid-cols-2">
+            {places.map((p) => (
+              <li key={p} className="md:whitespace-nowrap">
+                {p}
+              </li>
+            ))}
+          </ul>
+        </>
+      }
+      gaveUp="Adding an upgrade prompt wherever a screen felt empty."
+      why="Five is a limit. Leaving other tempting spots out on purpose keeps the paywall from chasing people around the app."
+      visual={<PaywallPlacesVisual />}
     />
   );
 }

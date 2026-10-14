@@ -34,7 +34,9 @@ const seasonMix = localFont({
 
 const googleSansFlex = Google_Sans_Flex({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  // 900 added for the Paywall intro's "UNLOCK FULL ACCESS", which Figma sets
+  // in Google Sans Flex Black; without it font-black clamps to 600.
+  weight: ["400", "500", "600", "900"],
   variable: "--font-google-sans-flex",
   display: "swap",
 });
