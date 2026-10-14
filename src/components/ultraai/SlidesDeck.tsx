@@ -7,6 +7,8 @@ import {
   useState,
   type ComponentType,
 } from "react";
+import { gsap } from "gsap";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import SegmentedRail, {
   type Chapter,
 } from "@/components/fastrouter-slides/SegmentedRail";
@@ -28,6 +30,12 @@ import {
 import VedaIntroSlide from "@/components/ultraai/VedaIntroSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { useHeaderInvertSurface } from "@/components/shared/HeaderProvider";
+
+// Drives the touch pill's jump-to-section, same plugin and tween as
+// fastrouter-slides/SlidesDeck.tsx. Native `scrollIntoView` smooth-scrolls
+// did nothing on the touch stack: the jump has to end below the fixed header,
+// and the scroll-spy has to be frozen for exactly as long as the scroll lasts.
+gsap.registerPlugin(ScrollToPlugin);
 
 const HEADER_HEIGHT_FALLBACK_PX = 64;
 
@@ -165,6 +173,10 @@ export default function SlidesDeck() {
   const activeIndexRef = useRef(0);
   const jumpRef = useRef<{ from: number; to: number } | null>(null);
   const reduceMotionRef = useRef(false);
+  // True while a pill jump is scrolling, so the touch scroll-spy doesn't tick
+  // through every slide on the way and flicker the pill. Cleared by the tween.
+  const programmaticScroll = useRef(false);
+  const scrollTween = useRef<gsap.core.Tween | null>(null);
 
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -193,7 +205,11 @@ export default function SlidesDeck() {
 
   useEffect(() => {
     const mql = window.matchMedia("(hover: none) and (pointer: coarse)");
-    const update = () => setIsTouch(mql.matches);
+    // `?input=touch` forces the touch layout, for checking the phone stack and
+    // the pill from a desktop browser that can't report a coarse pointer.
+    const forced =
+      new URLSearchParams(window.location.search).get("input") === "touch";
+    const update = () => setIsTouch(forced || mql.matches);
     update();
     mql.addEventListener("change", update);
     return () => mql.removeEventListener("change", update);
@@ -205,6 +221,7 @@ export default function SlidesDeck() {
     if (!isTouch) return;
     const observer = new IntersectionObserver(
       (entries) => {
+        if (programmaticScroll.current) return;
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
@@ -249,12 +266,64 @@ export default function SlidesDeck() {
         return;
       }
 
-      mobileSlideRefs.current[index]?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+      const el = mobileSlideRefs.current[index];
+      if (!el) return;
+
+      // Kill any earlier jump FIRST (its interrupt clears the guard), then
+      // guard the spy and show the destination's chapter immediately.
+      scrollTween.current?.kill();
+      programmaticScroll.current = true;
+      setActiveIndex(index);
+
+      // Hand control back on a real touch/wheel rather than ScrollToPlugin's
+      // autoKill, which dies a few frames in on iOS (it compares scroll
+      // positions iOS updates off the main thread).
+      //
+      // Two guards on top of that, both for input that ISN'T the reader
+      // taking over: events in the first 400ms are ignored (the tail of the
+      // tap itself, and the trackpad's wheel inertia that is still firing when
+      // a laptop/inspector user taps the pill, which would otherwise kill the
+      // jump on its first frame), and a finished jump re-measures its target
+      // and corrects, because images and video above it settle after the
+      // tween has already read where the section was.
+      const startedAt = performance.now();
+      const cancel = () => {
+        if (performance.now() - startedAt < 400) return;
+        scrollTween.current?.kill();
+      };
+      const release = () => {
+        programmaticScroll.current = false;
+        scrollTween.current = null;
+        window.removeEventListener("touchstart", cancel);
+        window.removeEventListener("wheel", cancel);
+      };
+      const settle = () => {
+        const off = el.getBoundingClientRect().top - headerHeight;
+        if (Math.abs(off) > 4) {
+          window.scrollTo({ top: window.scrollY + off, behavior: "auto" });
+        }
+        release();
+      };
+
+      scrollTween.current = gsap.to(window, {
+        duration: 0.8,
+        ease: "power2.inOut",
+        scrollTo: { y: el, offsetY: headerHeight },
+        onComplete: settle,
+        onInterrupt: release,
       });
+      window.addEventListener("touchstart", cancel, { passive: true });
+      window.addEventListener("wheel", cancel, { passive: true });
     },
-    [navigateTo, isTouch]
+    [navigateTo, isTouch, headerHeight]
+  );
+
+  // Leaving mid-jump kills the tween; its interrupt detaches the listeners.
+  useEffect(
+    () => () => {
+      scrollTween.current?.kill();
+    },
+    []
   );
 
   // Keyboard: ArrowDown/PageDown/Space -> next, ArrowUp/PageUp -> previous.
