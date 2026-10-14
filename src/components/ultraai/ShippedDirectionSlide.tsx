@@ -69,7 +69,7 @@ const POINTS: readonly DirectionPoint[] = [
       <>
         <CardImage src={HOME} />
         <div
-          className={`${LAYER} top-[-2px] h-[320px] bg-bg-primary/50 backdrop-blur-[2px]`}
+          className={`${LAYER} top-[-4px] h-[320px] bg-bg-primary/50 backdrop-blur-[2px]`}
         />
         <CardBottomBar src={HOME} height={BAR_H} />
       </>
@@ -88,10 +88,10 @@ const POINTS: readonly DirectionPoint[] = [
       <>
         <CardImage src={EXPERT} />
         <div
-          className={`${LAYER} bottom-[-2px] h-[190px] bg-bg-primary/50 backdrop-blur-[2px]`}
+          className={`${LAYER} bottom-[-4px] h-[190px] bg-bg-primary/50 backdrop-blur-[2px]`}
         />
         <div
-          className={`${LAYER} top-[-2px] h-[107px] bg-gradient-to-b from-bg-primary/50 to-bg-primary/0 backdrop-blur-[2px]`}
+          className={`${LAYER} top-[-4px] h-[107px] bg-gradient-to-b from-bg-primary/50 to-bg-primary/0 backdrop-blur-[2px]`}
         />
       </>
     ),

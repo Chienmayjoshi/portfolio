@@ -80,11 +80,11 @@ export interface DirectionPoint {
 
 const FRAME_SHADOW =
   "shadow-[0_0_2.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent),0_0_0.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent)] dark:shadow-none";
-const FRAME_BORDER = "border-2 border-bg-surface dark:border-text-muted";
+const FRAME_BORDER = "border-4 border-bg-surface dark:border-text-muted";
 const CARD = `relative h-[400px] w-full overflow-hidden rounded-2xl ${FRAME_BORDER} ${FRAME_SHADOW}`;
 
 /** Layers inside a mobile card span the padding box plus Figma's -2px bleed. */
-export const LAYER = "absolute left-[-2px] w-[calc(100%+4px)]";
+export const LAYER = "absolute left-[-4px] w-[calc(100%+8px)]";
 const BAR_SHADOW =
   "shadow-[0_-2px_4px_color-mix(in_srgb,var(--color-text-primary)_6%,transparent)] dark:shadow-none";
 
@@ -115,7 +115,7 @@ function Themed({
 /** Top of a screenshot filling a mobile card (image is taller than the card). */
 export function CardImage({ src }: { src: ImageSource }) {
   return (
-    <div className="absolute left-[-2px] top-[-2px] aspect-[1170/2532] w-[calc(100%+4px)]">
+    <div className="absolute left-[-4px] top-[-4px] aspect-[1170/2532] w-[calc(100%+8px)]">
       <Themed src={src} sizes="350px" />
     </div>
   );
@@ -135,7 +135,7 @@ export function CardBottomBar({
 }) {
   return (
     <div
-      className={`${LAYER} bottom-[-2px] overflow-hidden rounded-t-[15px] ${BAR_SHADOW}`}
+      className={`${LAYER} bottom-[-4px] overflow-hidden rounded-t-[15px] ${BAR_SHADOW}`}
       style={{ height }}
     >
       <div className="absolute inset-x-0 bottom-0 aspect-[1170/2532] w-full">
@@ -316,7 +316,7 @@ export default function DirectionSlide({
                   <span className="flex min-w-0 flex-1 flex-col gap-16px">
                     <span className="flex flex-col gap-8px text-[14px] leading-[20px]">
                       <span
-                        className={`font-ui font-semibold text-text-primary transition-colors duration-200 ${t.hoverText}`}
+                        className={`font-ui font-semibold transition-colors duration-200 ${isActive ? t.text : "text-text-primary"} ${t.hoverText}`}
                       >
                         {point.title}
                       </span>

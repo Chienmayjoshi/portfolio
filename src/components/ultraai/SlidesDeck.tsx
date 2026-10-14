@@ -20,8 +20,12 @@ import {
   ShellDecision01Slide,
   ShellDecision02Slide,
   ShellDecision03Slide,
+  ShellDecision04Slide,
   ShellDecision05Slide,
+  VedaDecision01Slide,
+  VedaDecision02Slide,
 } from "@/components/ultraai/ShellDecisionSlide";
+import VedaIntroSlide from "@/components/ultraai/VedaIntroSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { useHeaderInvertSurface } from "@/components/shared/HeaderProvider";
 
@@ -59,6 +63,7 @@ const ULTRAAI_BUILT_CHAPTER_IDS = new Set([
   "hero",
   "problem",
   "shell",
+  "veda",
 ]);
 
 // "product" is skipped on purpose (assets still in progress), so the deck
@@ -72,7 +77,11 @@ const SLIDE_IDS = [
   "shell-decision-01",
   "shell-decision-02",
   "shell-decision-03",
+  "shell-decision-04",
   "shell-decision-05",
+  "veda",
+  "veda-decision-01",
+  "veda-decision-02",
 ] as const;
 // `active` is only passed on the pointer deck, to slides that run something
 // while on screen (every slide stays mounted and stacked); the rest ignore it.
@@ -85,7 +94,11 @@ const SLIDE_COMPONENTS: ComponentType<{ active?: boolean }>[] = [
   ShellDecision01Slide,
   ShellDecision02Slide,
   ShellDecision03Slide,
+  ShellDecision04Slide,
   ShellDecision05Slide,
+  VedaIntroSlide,
+  VedaDecision01Slide,
+  VedaDecision02Slide,
 ];
 // The Shell's intro, rejected and shipped direction slides share the "shell" tick;
 // `fill` below is how much of the active chapter has been read.
@@ -99,6 +112,10 @@ const SLIDE_CHAPTER_IDS = [
   "shell",
   "shell",
   "shell",
+  "shell",
+  "veda",
+  "veda",
+  "veda",
 ] as const;
 // How each slide's surface relates to the global toggle, deciding whether the
 // rail (and the header) read light or dark over it — same meaning as
@@ -112,6 +129,10 @@ const SLIDE_RAIL_MODE = [
   "follow",
   "follow",
   "follow",
+  "follow",
+  "follow",
+  "follow",
+  "invert",
   "follow",
   "follow",
 ] as const;

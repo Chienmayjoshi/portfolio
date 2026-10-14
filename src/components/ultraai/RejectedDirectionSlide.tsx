@@ -54,7 +54,7 @@ const POINTS: readonly DirectionPoint[] = [
         <CardImage src={TOP_TABS} />
         <CardBottomBar src={TOP_TABS} />
         <div
-          className={`${LAYER} top-[-2px] h-[343px] bg-bg-primary/50 backdrop-blur-[2px]`}
+          className={`${LAYER} top-[-4px] h-[343px] bg-bg-primary/50 backdrop-blur-[2px]`}
         />
       </>
     ),
@@ -72,7 +72,7 @@ const POINTS: readonly DirectionPoint[] = [
       <>
         <CardImage src={TOP_TABS} />
         <div
-          className={`${LAYER} bottom-[-2px] h-[227px] bg-bg-primary/50 backdrop-blur-[2px]`}
+          className={`${LAYER} bottom-[-4px] h-[227px] bg-bg-primary/50 backdrop-blur-[2px]`}
         />
         <div
           className={`${LAYER} bottom-[286px] h-[112px] bg-gradient-to-b from-bg-primary/50 to-bg-primary/0 backdrop-blur-[2px]`}
@@ -93,13 +93,13 @@ const POINTS: readonly DirectionPoint[] = [
       <>
         <CardImage src={SECOND_ROW} />
         <div
-          className={`${LAYER} bottom-[-2px] h-[56px] bg-gradient-to-t from-bg-primary from-[5.6%] via-bg-primary/80 via-[52.8%] to-bg-primary/0`}
+          className={`${LAYER} bottom-[-4px] h-[56px] bg-gradient-to-t from-bg-primary from-[5.6%] via-bg-primary/80 via-[52.8%] to-bg-primary/0`}
         />
         <div
-          className={`${LAYER} bottom-[-2px] h-[168px] bg-gradient-to-b from-bg-primary/0 to-bg-primary/50 backdrop-blur-[2px]`}
+          className={`${LAYER} bottom-[-4px] h-[168px] bg-gradient-to-b from-bg-primary/0 to-bg-primary/50 backdrop-blur-[2px]`}
         />
         <div
-          className={`${LAYER} top-[-2px] h-[113px] bg-gradient-to-b from-bg-primary/50 to-bg-primary/0 backdrop-blur-[2px]`}
+          className={`${LAYER} top-[-4px] h-[113px] bg-gradient-to-b from-bg-primary/50 to-bg-primary/0 backdrop-blur-[2px]`}
         />
       </>
     ),

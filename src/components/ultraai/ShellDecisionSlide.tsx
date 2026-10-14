@@ -39,7 +39,10 @@ import ThemeSwap from "@/components/shared/ThemeSwap";
 interface ShellDecisionLayoutProps {
   id: string;
   number: string;
-  headline: [string, string];
+  /** Eyebrow after "Decision ·". */
+  chapter?: string;
+  /** One line, or two with a hard break on desktop. */
+  headline: string | [string, string];
   chose: string;
   gaveUp: string;
   why: string;
@@ -54,6 +57,7 @@ interface ShellDecisionLayoutProps {
 function ShellDecisionLayout({
   id,
   number,
+  chapter = "The shell",
   headline,
   chose,
   gaveUp,
@@ -90,12 +94,18 @@ function ShellDecisionLayout({
                 </span>
               </div>
               <p className="font-mono text-[13px] text-text-accent uppercase leading-[18px] tracking-[0.78px]">
-                Decision · The shell
+                Decision · {chapter}
               </p>
             </div>
             <h2 className="font-display text-slide-title-sm text-text-primary md:text-slide-title">
-              {headline[0]} <br className="hidden md:block" />
-              {headline[1]}
+              {typeof headline === "string" ? (
+                headline
+              ) : (
+                <>
+                  {headline[0]} <br className="hidden md:block" />
+                  {headline[1]}
+                </>
+              )}
             </h2>
           </div>
 
@@ -243,7 +253,7 @@ const D2_STANDALONE = {
 };
 
 const MOCK_FRAME =
-  "relative h-[300px] w-[139px] shrink-0 overflow-hidden rounded-[12px] border-2 md:h-[550px] md:w-[254px] md:rounded-2xl md:border-4 border-bg-surface dark:border-text-muted shadow-[0_0_2.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent),0_0_0.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent)] dark:shadow-none";
+  "relative h-[300px] w-[139px] shrink-0 overflow-hidden rounded-[12px] border-4 md:h-[550px] md:w-[254px] md:rounded-2xl border-bg-surface dark:border-text-muted shadow-[0_0_2.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent),0_0_0.5px_color-mix(in_srgb,var(--color-text-primary)_10%,transparent)] dark:shadow-none";
 
 function ThemedFill({
   src,
@@ -386,13 +396,15 @@ export function ShellDecision02Slide() {
 // drawn, so mobile follows decision 01's pattern (header, video, rationale).
 // Same shape as 01 with a different slot: the showcase video is 550x600 here
 // (x=730, so 130 from the 600px text column) rather than 600x655. The file is
-// 1008x794 and sits in that slot with object-contain (whole clip visible,
-// letterboxed on the page colour) — object-cover rendered it too large.
+// 1100x1200 — the slot's own 0.917 aspect — so cover and contain draw the
+// same thing; `contain` is kept so a differently shaped re-export is never
+// cropped.
 //
 // Copy verbatim from the frame, including "Why?". Headline is the deck's
 // slide-title token (48px / 32px mobile) with Figma's break after "capped".
 //
-// Assets: ua_Expertidentities_{light,dark}.mp4 as supplied (~4.3MB, 12s).
+// Assets: ua_expertcapped_{light,dark}.mp4 (~7MB each, 11.8s). They replace
+// ua_Expertidentities_*, which was the wrong clip and is no longer used.
 export function ShellDecision03Slide({ active }: { active?: boolean }) {
   return (
     <ShellDecisionLayout
@@ -405,12 +417,51 @@ export function ShellDecision03Slide({ active }: { active?: boolean }) {
       visual={
         <VideoVisual
           video={{
-            light: "/images/ultraai/ua_Expertidentities_light.mp4",
-            dark: "/images/ultraai/ua_Expertidentities_dark.mp4",
+            light: "/images/ultraai/ua_expertcapped_light.mp4",
+            dark: "/images/ultraai/ua_expertcapped_dark.mp4",
           }}
           label="UltraAI top bar of expert tabs, pinned experts capped at four with the rest behind Explore"
           active={active}
           frameClass="aspect-[550/600] md:w-[550px]"
+          fit="contain"
+        />
+      }
+    />
+  );
+}
+
+// ---------------------------------------------------------------- decision 04
+//
+// Figma desktop 7857:26537 (dark) / 7864:97904 (light); no mobile frame, so
+// mobile follows decision 01's pattern. The showcase video is 600x473 here
+// (x=680, 80 from the text column) and vertically centred against the
+// 580px-tall text block — which is what the layout's centring already does.
+// The clip (1008x794, 1.27:1) is that slot's own aspect, so nothing is
+// cropped.
+//
+// Copy verbatim from the frame, including "Why?". Headline is the deck's
+// slide-title token with Figma's break after "wayfinding,".
+//
+// Assets: ua_Expertidentities_{light,dark}.mp4 (~4.3MB, 12s). The names
+// match Figma's own layer, "Expert identities — Continuous loop".
+export function ShellDecision04Slide({ active }: { active?: boolean }) {
+  return (
+    <ShellDecisionLayout
+      id="shell-decision-04"
+      number="04"
+      headline={["Color as wayfinding,", "not branding"]}
+      chose="Every expert gets its own accent color, used consistently on buttons, chips, and icons."
+      gaveUp="One shared brand color for the whole app, with experts told apart only by their avatar and name."
+      why="With nine experts in one app, color is the fastest way to know who you’re talking to, faster than reading a label every time."
+      visual={
+        <VideoVisual
+          video={{
+            light: "/images/ultraai/ua_Expertidentities_light.mp4",
+            dark: "/images/ultraai/ua_Expertidentities_dark.mp4",
+          }}
+          label="UltraAI expert tabs, each expert in its own accent colour, looping through Kaia, Veda and Flex"
+          active={active}
+          frameClass="aspect-[600/473] md:w-[600px]"
           fit="contain"
         />
       }
@@ -433,7 +484,7 @@ export function ShellDecision03Slide({ active }: { active?: boolean }) {
 //   frequency  x 314   y 22   273 x 285   bottom-anchored crop
 //   sun sign   x 13.5  y 403  273 x 302   crop starts at 33.5% of the screen
 //   height     x 314   y 345  273 x 297   crop starts at 33.5% of the screen
-// Border 3px, in the same tokens as the other mockup frames (bg-surface,
+// Border 4px, in the same tokens as the other mockup frames (bg-surface,
 // text-muted in dark). Top two fade IN over their first ~48px, bottom two fade
 // OUT over their last ~110 — a mask on each whole frame, so the border fades
 // with the picture.
@@ -499,7 +550,7 @@ function OnboardingFrame({
   );
   return (
     <div
-      className="absolute overflow-hidden rounded-[14px] border-2 border-bg-surface md:rounded-[24px] md:border-[3px] dark:border-text-muted"
+      className="absolute overflow-hidden rounded-[14px] border-4 border-bg-surface md:rounded-[24px] dark:border-text-muted"
       style={{
         left: pct(item.x, W),
         top: pct(item.y, H),
@@ -549,6 +600,173 @@ export function ShellDecision05Slide() {
       gaveUp="One onboarding flow for every expert."
       why="Asking less is not always better. Veda is useful with almost nothing, while a workout plan is useless without body metrics. Asking at the point of need gives people value sooner."
       visual={<OnboardingComposite />}
+    />
+  );
+}
+
+// ------------------------------------------------------------- Veda decision 01
+//
+// Figma desktop 7891:131694 ("veda -decision 01"); no mobile frame, so mobile
+// follows the Shell decisions' pattern (header, visual, rationale). Same layout
+// as the Shell decisions with "Decision · Veda" as the eyebrow.
+//
+// The visual is a 562x747 stack of six onboarding screens in two columns of
+// three, 24 apart: the left column (x 21) is the INTENT flow — what draws you,
+// experience, astrology system — and the right (x 295) the BIRTH-DETAIL
+// screens — birthday, birth time known?, exact time. Columns are centred
+// independently (683 vs 738 tall), so they start at different heights. Each
+// screen is a cropped export (1170 x 924-1203) at 250 wide in a 4px frame
+// (same border tokens as the other mockup frames, 16px radius), the box height
+// being Figma's per-screen height; images fill it object-cover. The whole
+// stack fades over its top and bottom 32px, as Figma's two gradient strips do
+// — done as a mask so it fades to the surface in either theme.
+//
+// Everything is a percentage of 562x747, so the stack scales into the mobile
+// slot unchanged.
+//
+// FILE NAMES vs CONTENT: ua_birthlocation_* is the "Do you know what time you
+// were born?" screen and ua_birthtime_* the "exact time of birth?" picker —
+// the names read the other way round. Used by what each shows, in Figma's
+// order; say if the files were meant the other way.
+//
+// Assets: ua-veda-onboarding-{intent,experience,system,birthdate,
+// birthlocation,birthtime}[-dark].webp — supplied PNGs at 750px (3x), q88.
+const VEDA_W = 562;
+const VEDA_H = 747;
+
+const VEDA_SCREENS = [
+  { key: "intent", x: 21, y: 32, h: 238, alt: "What draws you here? Love and Relationships, Spiritual Path, Daily Guidance, Moon and Cosmic Cycles" },
+  { key: "experience", x: 21, y: 294, h: 197, alt: "How familiar are you with astrology?" },
+  { key: "system", x: 21, y: 515, h: 200, alt: "Which astrology system feels like yours? Vedic or Western" },
+  { key: "birthdate", x: 295, y: 4, h: 203, alt: "When's your birthday?" },
+  { key: "birthlocation", x: 295, y: 231, h: 258, alt: "Do you know what time you were born?" },
+  { key: "birthtime", x: 295, y: 513, h: 229, alt: "What is your exact time of birth?" },
+] as const;
+
+function VedaOnboardingStack() {
+  const fade =
+    "linear-gradient(to bottom, transparent 0, black 32px, black calc(100% - 32px), transparent 100%)";
+  return (
+    <div
+      className="relative aspect-[562/747] w-full md:w-[562px]"
+      style={{ maskImage: fade, WebkitMaskImage: fade }}
+    >
+      {VEDA_SCREENS.map((s) => (
+        <div
+          key={s.key}
+          className="absolute overflow-hidden rounded-[10px] border-4 border-bg-surface md:rounded-2xl dark:border-text-muted"
+          style={{
+            left: `${((s.x / VEDA_W) * 100).toFixed(3)}%`,
+            top: `${((s.y / VEDA_H) * 100).toFixed(3)}%`,
+            width: `${((250 / VEDA_W) * 100).toFixed(3)}%`,
+            height: `${((s.h / VEDA_H) * 100).toFixed(3)}%`,
+          }}
+        >
+          <ThemeSwap
+            light={
+              <Image
+                src={`/images/ultraai/ua-veda-onboarding-${s.key}.webp`}
+                alt={s.alt}
+                fill
+                sizes="(min-width: 768px) 250px, 160px"
+                className="object-cover"
+              />
+            }
+            dark={
+              <Image
+                src={`/images/ultraai/ua-veda-onboarding-${s.key}-dark.webp`}
+                alt={s.alt}
+                fill
+                sizes="(min-width: 768px) 250px, 160px"
+                className="object-cover"
+              />
+            }
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function VedaDecision01Slide() {
+  return (
+    <ShellDecisionLayout
+      id="veda-decision-01"
+      number="01"
+      chapter="Veda"
+      headline="Onboarding by intent"
+      chose="Onboarding starts with what you came for. Your focus areas set what shows up first, and your experience level sets how Veda talks to you. Every expert starts this way."
+      gaveUp="One long signup screen asking for birth date, time, and location before showing anything."
+      why="Full birth details are more personal than a sun sign. Veda asks for them later, only when a feature like the birth chart needs them."
+      visual={<VedaOnboardingStack />}
+    />
+  );
+}
+
+// ------------------------------------------------------------- Veda decision 02
+//
+// Figma desktop 7893:134109 ("veda -decision 02"); no mobile frame, so mobile
+// follows the same pattern as the other decisions. Two phones, 254x550 in
+// 4px frames, 40 apart, 132 from the text column: the Tarot "3 Cards Spread"
+// screen with its Go Deeper sheet (the credit cost sits on the Get Insight
+// button) beside the resulting chat reading. Left is an export 1170x2496 shown
+// at 254x542 (Figma's own, inside the 550 frame), right 1170x2532 at 254x550.
+//
+// All percentages of 548x550, so the pair scales into the mobile slot.
+//
+// Assets: ua-veda-spreads[-dark].webp (ua_spreads_*) and
+// ua-veda-spreads-chat[-dark].webp (ua_spreadschat_*), the supplied PNGs at
+// 762px (3x), q88.
+const VEDA_SPREADS = [
+  { light: "/images/ultraai/ua-veda-spreads.webp", dark: "/images/ultraai/ua-veda-spreads-dark.webp", alt: "Tarot 3 Cards Spread with the Go Deeper sheet; the Get Insight button shows the credit cost" },
+  { light: "/images/ultraai/ua-veda-spreads-chat.webp", dark: "/images/ultraai/ua-veda-spreads-chat-dark.webp", alt: "Veda's reading of the drawn cards in chat" },
+] as const;
+
+function VedaSpreadsVisual() {
+  return (
+    <div className="flex aspect-[548/550] w-full items-stretch justify-between md:w-[548px]">
+      {VEDA_SPREADS.map((p) => (
+        <div
+          key={p.light}
+          className="relative h-full w-[46.35%] overflow-hidden rounded-[10px] border-4 border-bg-surface md:rounded-2xl dark:border-text-muted"
+        >
+          <ThemeSwap
+            light={
+              <Image
+                src={p.light}
+                alt={p.alt}
+                fill
+                sizes="(min-width: 768px) 254px, 160px"
+                className="object-cover object-top"
+              />
+            }
+            dark={
+              <Image
+                src={p.dark}
+                alt={p.alt}
+                fill
+                sizes="(min-width: 768px) 254px, 160px"
+                className="object-cover object-top"
+              />
+            }
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function VedaDecision02Slide() {
+  return (
+    <ShellDecisionLayout
+      id="veda-decision-02"
+      number="02"
+      chapter="Veda"
+      headline="Tarot’s credit economy"
+      chose="Tarot is Veda’s signature feature. Drawing a card is free and unlimited, and only the AI insight on a card costs a credit. The cost shows on the button before you tap."
+      gaveUp="Charging a credit for every action, including the draw."
+      why="Free draws give people a reason to come back every day. The credit sits only on the interpretation, the one moment worth paying for."
+      visual={<VedaSpreadsVisual />}
     />
   );
 }
