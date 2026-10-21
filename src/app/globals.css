@@ -51,6 +51,12 @@
   --color-text-accent: #1A34D7;
   --color-text-error: #C0392B;
   --color-text-success: #48A825;
+  /* PROPOSED (not in design-tokens.json): the yellow marker behind the
+     [SUBJECT]-style placeholders in the UltraAI prompt template card (Figma
+     #F1C335, the design system's yellow). One value in both themes — it is a
+     highlighter on a dark prompt panel. Needs sign-off before it is treated
+     as final. */
+  --color-highlight: #F1C335;
 
   /* ------------------------------------------------------------------
      SPACING — literal pixel scale, keys suffixed "px" ON PURPOSE.
@@ -397,4 +403,25 @@ body {
   .ua-ds-track {
     animation: none;
   }
+}
+
+/* UltraAI illustration-system video: the light export has its top and bottom
+   fade baked in, the dark one does not, so the fade is applied in code in dark
+   mode only (applying it in both would double it on light). 64px, same
+   gradient shape as the design-system window's mask. */
+.dark .ua-video-fade-dark {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 64px,
+    black calc(100% - 64px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 64px,
+    black calc(100% - 64px),
+    transparent 100%
+  );
 }

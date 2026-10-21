@@ -15,6 +15,7 @@ import SegmentedRail, {
 import UltraAILogomark from "@/components/ultraai/UltraAILogomark";
 import HeroSlide from "@/components/ultraai/HeroSlide";
 import ProblemSlide from "@/components/ultraai/ProblemSlide";
+import ProductSlide from "@/components/ultraai/ProductSlide";
 import ShellIntroSlide from "@/components/ultraai/ShellIntroSlide";
 import RejectedDirectionSlide from "@/components/ultraai/RejectedDirectionSlide";
 import ShippedDirectionSlide from "@/components/ultraai/ShippedDirectionSlide";
@@ -36,6 +37,7 @@ import PaywallIntroSlide from "@/components/ultraai/PaywallIntroSlide";
 import FlexIntroSlide from "@/components/ultraai/FlexIntroSlide";
 import StatusSlide from "@/components/ultraai/StatusSlide";
 import DesignSystemSlide from "@/components/ultraai/DesignSystemSlide";
+import IllustrationSystemSlide from "@/components/ultraai/IllustrationSystemSlide";
 import ReflectionsSlide from "@/components/ultraai/ReflectionsSlide";
 import ThanksSlide from "@/components/ultraai/ThanksSlide";
 import ReadNextSlide from "@/components/ultraai/ReadNextSlide";
@@ -81,21 +83,22 @@ const ULTRAAI_CHAPTERS: Chapter[] = [
 const ULTRAAI_BUILT_CHAPTER_IDS = new Set([
   "hero",
   "problem",
+  "product",
   "shell",
   "veda",
   "paywall",
   "flex",
   "design-system",
+  "illustration-system",
   "status",
   "reflections",
   "closing",
 ]);
 
-// "product" is skipped on purpose (assets still in progress), so the deck
-// goes problem -> shell and the rail's product tick stays inert.
 const SLIDE_IDS = [
   "hero",
   "problem",
+  "product",
   "shell",
   "shell-rejected",
   "shell-shipped",
@@ -114,6 +117,7 @@ const SLIDE_IDS = [
   "flex-decision-01",
   "flex-decision-02",
   "design-system",
+  "illustration-system",
   "status",
   "reflections",
   "thanks",
@@ -124,6 +128,7 @@ const SLIDE_IDS = [
 const SLIDE_COMPONENTS: ComponentType<{ active?: boolean }>[] = [
   HeroSlide,
   ProblemSlide,
+  ProductSlide,
   ShellIntroSlide,
   RejectedDirectionSlide,
   ShippedDirectionSlide,
@@ -142,6 +147,7 @@ const SLIDE_COMPONENTS: ComponentType<{ active?: boolean }>[] = [
   FlexDecision01Slide,
   FlexDecision02Slide,
   DesignSystemSlide,
+  IllustrationSystemSlide,
   StatusSlide,
   ReflectionsSlide,
   ThanksSlide,
@@ -152,6 +158,7 @@ const SLIDE_COMPONENTS: ComponentType<{ active?: boolean }>[] = [
 const SLIDE_CHAPTER_IDS = [
   "hero",
   "problem",
+  "product",
   "shell",
   "shell",
   "shell",
@@ -170,6 +177,7 @@ const SLIDE_CHAPTER_IDS = [
   "flex",
   "flex",
   "design-system",
+  "illustration-system",
   "status",
   "reflections",
   "closing",
@@ -182,21 +190,23 @@ const SLIDE_CHAPTER_IDS = [
 const SLIDE_RAIL_MODE = [
   "follow",
   "follow",
-  "invert",
-  "follow",
-  "follow",
-  "follow",
-  "follow",
-  "follow",
-  "follow",
   "follow",
   "invert",
   "follow",
   "follow",
+  "follow",
+  "follow",
+  "follow",
+  "follow",
+  "follow",
   "invert",
   "follow",
   "follow",
   "invert",
+  "follow",
+  "follow",
+  "invert",
+  "follow",
   "follow",
   "follow",
   "follow",

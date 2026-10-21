@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useProgressLoop } from "@/components/ultraai/useProgressLoop";
 import GridDepthLayer from "@/components/shared/GridDepthLayer";
 import ThemeSwap from "@/components/shared/ThemeSwap";
 
@@ -226,10 +227,12 @@ export default function DirectionSlide({
   progressSeconds = 6,
   active = true,
 }: DirectionSlideProps) {
-  const [index, setIndex] = useState(0);
-  const [run, setRun] = useState(0);
-  const reduceMotion = useReducedMotion();
   const t = TONES[tone];
+  const { index, progress, select, hover } = useProgressLoop({
+    count: points.length,
+    seconds: progressSeconds,
+    active,
+  });
 
   // Each phone starts on the first image any point gives it, then only changes
   // when a point that names an image becomes active.
@@ -238,26 +241,18 @@ export default function DirectionSlide({
   );
   const [shown, setShown] = useState<ImageSource[]>(initialShown);
 
-  // Entering the slide starts the loop from the first point.
+  // Entering the slide resets what the phones show (the loop itself restarts
+  // in useProgressLoop).
   useEffect(() => {
     if (!active) return;
-    setIndex(0);
-    setRun((r) => r + 1);
     setShown(initialShown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
   useEffect(() => {
     const phones = points[index].phones;
-    setShown((cur) =>
-      cur.map((src, side) => phones[side] ?? src)
-    );
+    setShown((cur) => cur.map((src, side) => phones[side] ?? src));
   }, [index, points]);
-
-  const select = (i: number) => {
-    setIndex(i);
-    setRun((r) => r + 1);
-  };
 
   // Every distinct image either phone ever shows, so a change cross-fades
   // between layers that are already mounted instead of swapping one <img>.
@@ -297,7 +292,10 @@ export default function DirectionSlide({
           </div>
 
           {/* Desktop: selectable points with the active one's progress bar. */}
-          <div className="hidden w-[550px] flex-col gap-24px md:flex">
+          <div
+            className="hidden w-[550px] flex-col gap-24px md:flex"
+            {...hover}
+          >
             {points.map((point, i) => {
               const isActive = i === index;
               return (
@@ -326,24 +324,12 @@ export default function DirectionSlide({
                     </span>
                     <span
                       aria-hidden="true"
-                      className={`block h-[2px] w-full bg-border-frame ${isActive ? "" : "opacity-0"}`}
+                      className={`block h-[2px] w-full bg-border-frame md:max-w-[320px] ${isActive ? "" : "opacity-0"}`}
                     >
                       {isActive && (
                         <motion.span
-                          key={`${i}-${run}`}
                           className="block h-full w-full origin-left bg-text-primary"
-                          initial={{ scaleX: active && !reduceMotion ? 0 : 1 }}
-                          animate={{ scaleX: 1 }}
-                          transition={{
-                            duration:
-                              active && !reduceMotion ? progressSeconds : 0,
-                            ease: "linear",
-                          }}
-                          onAnimationComplete={() => {
-                            if (!active || reduceMotion) return;
-                            setIndex((cur) => (cur + 1) % points.length);
-                            setRun((r) => r + 1);
-                          }}
+                          style={{ scaleX: progress }}
                         />
                       )}
                     </span>
@@ -362,7 +348,10 @@ export default function DirectionSlide({
         </div>
 
         {/* Desktop: the two phones and the fading highlights. */}
-        <div className="relative hidden h-[620px] w-[628px] shrink-0 gap-[56px] md:flex">
+        <div
+          className="relative hidden h-[620px] w-[628px] shrink-0 gap-[56px] md:flex"
+          {...hover}
+        >
           {phoneImages.map((images, side) => (
             <div
               key={side}
