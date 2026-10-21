@@ -1095,4 +1095,76 @@ export function PaywallDecision02Slide() {
   );
 }
 
+// ------------------------------------------------------------- Flex decision 01
+//
+// Figma desktop 7932:264559 ("flex decision 01 loop"); no mobile frame, so
+// mobile follows decision 01's pattern (header, video, rationale). The video
+// slot is 600x655 at x=680 — the same as Shell decision 01 — and the clip is
+// 1100x1200, that slot's own 0.917 aspect, so it is the default frame.
+//
+// Copy verbatim from the frame, including "Why?". Headline is the deck's
+// slide-title token with Figma's break after "gets a".
+//
+// Assets: ua_flexdecision01_{light,dark}.mp4 (~7.6MB, 11s) as supplied; worth
+// re-encoding before shipping, like the other clips.
+export function FlexDecision01Slide({ active }: { active?: boolean }) {
+  return (
+    <ShellDecisionLayout
+      id="flex-decision-01"
+      number="01"
+      chapter="Flex"
+      headline={["Every expert gets a", "signature slot"]}
+      chose="Each expert has one signature feature, in the same bottom nav slot. Tarot for Veda, Workout Session for Flex. Same nav component, different feature behind it."
+      gaveUp="Custom navigation for each expert’s main feature."
+      why="People learn where an expert’s main feature lives once, and it works for every expert after. Flex proves it: a very different domain, same slot."
+      visual={
+        <VideoVisual
+          video={{
+            light: "/images/ultraai/ua_flexdecision01_light.mp4",
+            dark: "/images/ultraai/ua_flexdecision01_dark.mp4",
+          }}
+          label="Flex's home screen: the Workout Session signature feature in the same bottom nav slot Tarot takes for Veda"
+          active={active}
+        />
+      }
+    />
+  );
+}
+
+// ------------------------------------------------------------- Flex decision 02
+//
+// Figma desktop 7935:270107 ("flex decision 02 loop"); no mobile frame, so
+// mobile follows decision 01's pattern. Same slot as Flex decision 01: a
+// 600x655 video at x=680 and a 1100x1200 clip (the slot's own aspect), so it
+// is the default frame.
+//
+// Copy verbatim from the frame, including "Why?" and the curly apostrophes.
+// Headline is the deck's slide-title token with Figma's break after "body".
+//
+// Assets: ua_flexdecision02_{light,dark}.mp4 (13s) as supplied; worth
+// re-encoding before shipping, like the other clips.
+export function FlexDecision02Slide({ active }: { active?: boolean }) {
+  return (
+    <ShellDecisionLayout
+      id="flex-decision-02"
+      number="02"
+      chapter="Flex"
+      headline={["Flex asks for body", "metrics on day one"]}
+      chose="Flex asks for body metrics, like height and weight, at the start of onboarding. It is the same data ask rule as Veda’s, with the opposite result."
+      gaveUp="Asking gradually, the way Veda does."
+      why="A workout plan doesn’t work without body metrics, so Flex needs them on day one. Veda’s first features need almost nothing, so she asks later. The rule stays the same and the answer follows the feature."
+      visual={
+        <VideoVisual
+          video={{
+            light: "/images/ultraai/ua_flexdecision02_light.mp4",
+            dark: "/images/ultraai/ua_flexdecision02_dark.mp4",
+          }}
+          label="Flex onboarding asking What is Your Goal? with Strength, Fat Loss, Endurance and General, then body metrics"
+          active={active}
+        />
+      }
+    />
+  );
+}
+
 export default ShellDecision01Slide;

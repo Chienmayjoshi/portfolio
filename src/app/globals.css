@@ -371,3 +371,30 @@ body {
     animation: none;
   }
 }
+
+
+/* ==========================================================================
+   UltraAI "design system" slide — the screenshot of the system scrolls
+   vertically, very slowly, as one continuous strip. Two copies of the image
+   are stacked and the track travels exactly one copy (-50%) then restarts, so
+   the loop has no visible reset. An always-on ambient loop, not tied to scroll
+   or React state — plain CSS, same rule as the hero zoom above. Held still
+   under prefers-reduced-motion, and paused by the slide while it is off screen.
+   ========================================================================== */
+@keyframes ua-ds-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+.ua-ds-track {
+  animation: ua-ds-scroll 110s linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ua-ds-track {
+    animation: none;
+  }
+}

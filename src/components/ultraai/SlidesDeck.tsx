@@ -28,10 +28,17 @@ import {
   VedaDecision02Slide,
   PaywallDecision01Slide,
   PaywallDecision02Slide,
+  FlexDecision01Slide,
+  FlexDecision02Slide,
 } from "@/components/ultraai/ShellDecisionSlide";
 import VedaIntroSlide from "@/components/ultraai/VedaIntroSlide";
 import PaywallIntroSlide from "@/components/ultraai/PaywallIntroSlide";
 import FlexIntroSlide from "@/components/ultraai/FlexIntroSlide";
+import StatusSlide from "@/components/ultraai/StatusSlide";
+import DesignSystemSlide from "@/components/ultraai/DesignSystemSlide";
+import ReflectionsSlide from "@/components/ultraai/ReflectionsSlide";
+import ThanksSlide from "@/components/ultraai/ThanksSlide";
+import ReadNextSlide from "@/components/ultraai/ReadNextSlide";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { useHeaderInvertSurface } from "@/components/shared/HeaderProvider";
 
@@ -78,6 +85,10 @@ const ULTRAAI_BUILT_CHAPTER_IDS = new Set([
   "veda",
   "paywall",
   "flex",
+  "design-system",
+  "status",
+  "reflections",
+  "closing",
 ]);
 
 // "product" is skipped on purpose (assets still in progress), so the deck
@@ -100,6 +111,13 @@ const SLIDE_IDS = [
   "paywall-decision-01",
   "paywall-decision-02",
   "flex",
+  "flex-decision-01",
+  "flex-decision-02",
+  "design-system",
+  "status",
+  "reflections",
+  "thanks",
+  "read-next",
 ] as const;
 // `active` is only passed on the pointer deck, to slides that run something
 // while on screen (every slide stays mounted and stacked); the rest ignore it.
@@ -121,6 +139,13 @@ const SLIDE_COMPONENTS: ComponentType<{ active?: boolean }>[] = [
   PaywallDecision01Slide,
   PaywallDecision02Slide,
   FlexIntroSlide,
+  FlexDecision01Slide,
+  FlexDecision02Slide,
+  DesignSystemSlide,
+  StatusSlide,
+  ReflectionsSlide,
+  ThanksSlide,
+  ReadNextSlide,
 ];
 // The Shell's intro, rejected and shipped direction slides share the "shell" tick;
 // `fill` below is how much of the active chapter has been read.
@@ -142,6 +167,13 @@ const SLIDE_CHAPTER_IDS = [
   "paywall",
   "paywall",
   "flex",
+  "flex",
+  "flex",
+  "design-system",
+  "status",
+  "reflections",
+  "closing",
+  "closing",
 ] as const;
 // How each slide's surface relates to the global toggle, deciding whether the
 // rail (and the header) read light or dark over it — same meaning as
@@ -165,6 +197,13 @@ const SLIDE_RAIL_MODE = [
   "follow",
   "follow",
   "invert",
+  "follow",
+  "follow",
+  "follow",
+  "follow",
+  "follow",
+  "follow",
+  "follow",
 ] as const;
 
 // Ported from fastrouter-slides/SlidesDeck.tsx, mechanism unchanged: a tall

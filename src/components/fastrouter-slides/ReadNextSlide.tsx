@@ -65,10 +65,37 @@ import { armCaseStudyEnter } from "@/components/shared/caseStudyEnterArming";
 //
 // Copy is not new: the headline and paragraph are the same strings the
 // vertical route's own ReadNext teaser card already uses for Analytics.
-const NEXT_HREF = "/analytics";
-const NEXT_TITLE = "Analytics";
-const NEXT_BLURB =
-  "50+ metrics, no taxonomy, and a formula builder that broke every time a dependency was missing.";
+//
+// RETARGETED 2026-10-16 (per direct instruction): FastRouter's next case study
+// is now UltraAI, and UltraAI's is Analytics. The slide takes its target as a
+// prop so both decks render this one card — `FASTROUTER_NEXT` below is the
+// default, `ULTRAAI_NEXT` is what the UltraAI deck passes. Neither blurb is
+// new copy: UltraAI's is its own deck's hero TL;DR, Analytics' is the
+// teaser string already on the homepage card. Neither has a cover asset yet,
+// so each renders the placeholder labelled for its target (see the image note
+// above).
+export interface ReadNextTarget {
+  href: string;
+  title: string;
+  blurb: string;
+  coverLabel: string;
+}
+
+export const FASTROUTER_NEXT: ReadNextTarget = {
+  href: "/ultraai",
+  title: "UltraAI",
+  blurb:
+    "A chatbot is only as valuable as its one conversation. UltraAI runs on domain experts, each with its own home and signature feature, as one unified app or its own standalone app.",
+  coverLabel: "[UltraAI cover image]",
+};
+
+export const ULTRAAI_NEXT: ReadNextTarget = {
+  href: "/analytics",
+  title: "Analytics",
+  blurb:
+    "50+ metrics, no taxonomy, and a formula builder that broke every time a dependency was missing.",
+  coverLabel: "[Analytics cover image]",
+};
 
 // How long the line takes to fill before it navigates. Long enough to be
 // read as an offer and outrun by a scroll, short enough to actually complete
@@ -101,9 +128,17 @@ interface ReadNextSlideProps {
    * mobile at all.
    */
   active?: boolean;
+  /** Where the card points. Defaults to FastRouter's next case study. */
+  next?: ReadNextTarget;
 }
 
-export default function ReadNextSlide({ active = false }: ReadNextSlideProps) {
+export default function ReadNextSlide({
+  active = false,
+  next = FASTROUTER_NEXT,
+}: ReadNextSlideProps) {
+  const NEXT_HREF = next.href;
+  const NEXT_TITLE = next.title;
+  const NEXT_BLURB = next.blurb;
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const progress = useMotionValue(0);
@@ -219,7 +254,7 @@ export default function ReadNextSlide({ active = false }: ReadNextSlideProps) {
               placeholder until an Analytics cover exists — see the note at the
               top of this file. */}
           <div className="order-2 h-[260px] w-full overflow-hidden rounded-[24px] md:order-none md:h-[606px] md:w-[600px] md:shrink-0">
-            <AssetPlaceholder label="[Analytics cover image]" />
+            <AssetPlaceholder label={next.coverLabel} />
           </div>
         </ArmEnterLink>
       </div>
