@@ -5,12 +5,17 @@
 // Imported by all three case-study page.tsx files AND by
 // src/app/api/feedback/route.ts, so client-rendered options and
 // server-side validation can never drift apart.
-export type CaseStudySlug = "fastrouter" | "analytics" | "extensions";
+export type CaseStudySlug =
+  | "fastrouter"
+  | "analytics"
+  | "extensions"
+  | "ultraai";
 
 export const caseStudySlugs: CaseStudySlug[] = [
   "fastrouter",
   "analytics",
   "extensions",
+  "ultraai",
 ];
 
 export interface SingleSelectQuestion {
@@ -40,6 +45,21 @@ export const feedbackQuestions: Record<CaseStudySlug, SingleSelectQuestion> = {
     question: "Which constraint would you have handled differently?",
     options: ["ATF-as-product", "Mobile gesture seam", "Always-visible panel"],
   },
+  // UltraAI's options are craft qualities, not slide names (direct
+  // instruction, 2026-10-22). Storytelling / Trade-offs / Visuals are the
+  // person's own; Copy / Pacing / Depth / Process are proposed additions.
+  ultraai: {
+    question: "Which part could be better?",
+    options: [
+      "Storytelling",
+      "Trade-offs",
+      "Visuals",
+      "Copy",
+      "Pacing",
+      "Depth",
+      "Process",
+    ],
+  },
 };
 
 export interface FeedbackAggregateData {
@@ -58,6 +78,9 @@ export interface FeedbackAnswers {
   q2?: number;
   q3?: string;
   comment?: string;
+  /** Optional contact, only collected where the form asks (UltraAI). */
+  name?: string;
+  email?: string;
 }
 
 export interface FeedbackSubmission extends FeedbackAnswers {

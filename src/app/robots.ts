@@ -12,7 +12,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/deck/", "/lab/"],
+      disallow: ["/deck/", "/lab/", "/admin/"],
     },
   };
 }

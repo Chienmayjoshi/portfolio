@@ -1,5 +1,6 @@
 import GridDepthLayer from "@/components/shared/GridDepthLayer";
-import ShareButton from "@/components/shared/ShareButton";
+import CaseStudyFeedback from "@/components/shared/CaseStudyFeedback";
+import { feedbackQuestions } from "@/components/shared/feedbackQuestions";
 
 // Thanks card for the UltraAI deck — the closing card, sequenced after
 // Reflections and lighting the rail's "Closing" tick. It is
@@ -10,15 +11,14 @@ import ShareButton from "@/components/shared/ShareButton";
 // new or adapted. The mobile treatment is that slide's too: left-aligned,
 // lead 20/26, paragraph 14/20, the CTA row staying one row.
 //
-// ONE DIFFERENCE, on purpose: no "Give quick feedback" button. That flow is
-// keyed to a per-case-study question and option set copied from a spec
-// (feedbackQuestions.ts: "never invent replacement copy"), and UltraAI has
-// none yet. Rather than invent it, the row carries "Let's talk" and the share
-// button only, styled as that variant draws them. When the UltraAI question
-// exists: add "ultraai" to CaseStudySlug / feedbackQuestions, then swap this
-// row for <CaseStudyFeedback caseStudySlug="ultraai" variant="centered" />.
-// Until then the feedback API and the stored-response keys know nothing about
-// UltraAI, which is the intent.
+// FEEDBACK: the shared `CaseStudyFeedback` row in its centred variant (the
+// same one FastRouter's deck closes with), with three UltraAI settings:
+// `overlay` (the stepper opens as a right-side panel on desktop and a bottom
+// sheet on mobile, instead of expanding the row in place), `collectContact`
+// (an optional name + email on the last step) and the final button reading
+// "Send it to Chinmay". UltraAI's third question and options live in
+// feedbackQuestions.ts. It started out without this button because none of
+// that existed yet.
 //
 // Two Figma notes carried over from that slide, still flagged not fixed: the
 // lead line keeps its plain hyphen ("Most people don't - I mean that.") and
@@ -84,24 +84,19 @@ export default function UltraAIThanksSlide() {
               </p>
             </div>
 
-            {/* Same two buttons, same geometry as CaseStudyFeedback's centred
-                variant draws them (Figma 7468:22405-22410): "Let's talk" the
-                filled accent primary, share the 50x54 accent-outlined icon,
-                12px radius, one row at every width. */}
+            {/* The centred feedback row (Figma 7468:22405-22410): "Let's talk"
+                the filled primary, feedback and share accent-outlined, one
+                row at every width. Feedback opens as a side panel / bottom
+                sheet rather than expanding the row. */}
             <div className="mx-auto w-full max-w-[720px]">
-              <div className="flex w-full flex-row flex-wrap items-center gap-12px md:flex-nowrap md:justify-center md:gap-16px">
-                <a
-                  href="mailto:chinmay.joshi02@gmail.com"
-                  className="flex flex-1 items-center justify-center whitespace-nowrap rounded-lg border border-text-accent bg-text-accent px-16px py-12px font-ui font-semibold text-[17px] text-white leading-[28px] tracking-[0.085px] md:w-[234px] md:flex-none md:px-24px"
-                >
-                  Let&rsquo;s talk
-                </a>
-                <ShareButton
-                  iconOnly
-                  iconClassName="size-24px"
-                  className="flex h-[54px] w-[50px] shrink-0 items-center justify-center rounded-lg border border-text-accent text-text-accent transition-colors hover:bg-text-accent hover:text-white"
-                />
-              </div>
+              <CaseStudyFeedback
+                caseStudySlug="ultraai"
+                singleSelectQuestion={feedbackQuestions.ultraai}
+                variant="centered"
+                overlay
+                collectContact
+                submitLabel="Send it to Chinmay"
+              />
             </div>
           </div>
         </div>

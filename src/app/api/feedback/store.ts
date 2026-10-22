@@ -28,11 +28,45 @@ export interface FeedbackStore {
   hincrby(key: string, field: string, amount: number): Promise<number>;
   hgetall<T extends Record<string, string>>(key: string): Promise<T | null>;
   hset(key: string, fields: Record<string, string | number>): Promise<number>;
+  lpush(key: string, ...values: string[]): Promise<number>;
+  lrange(key: string, start: number, stop: number): Promise<string[]>;
+  lrem(key: string, count: number, value: string): Promise<number>;
+  del(...keys: string[]): Promise<number>;
 }
 
 class InMemoryFeedbackStore implements FeedbackStore {
   private numbers = new Map<string, number>();
   private hashes = new Map<string, Map<string, string>>();
+  private lists = new Map<string, string[]>();
+
+  async lpush(key: string, ...values: string[]) {
+    const list = this.lists.get(key) ?? [];
+    list.unshift(...values.reverse());
+    this.lists.set(key, list);
+    return list.length;
+  }
+
+  async lrange(key: string, start: number, stop: number) {
+    const list = this.lists.get(key) ?? [];
+    return list.slice(start, stop === -1 ? undefined : stop + 1);
+  }
+
+  async lrem(key: string, _count: number, value: string) {
+    const list = this.lists.get(key) ?? [];
+    const next = list.filter((v) => v !== value);
+    this.lists.set(key, next);
+    return list.length - next.length;
+  }
+
+  async del(...keys: string[]) {
+    let n = 0;
+    for (const k of keys) {
+      if (this.numbers.delete(k)) n++;
+      if (this.hashes.delete(k)) n++;
+      if (this.lists.delete(k)) n++;
+    }
+    return n;
+  }
 
   async get(key: string) {
     return this.numbers.get(key) ?? null;

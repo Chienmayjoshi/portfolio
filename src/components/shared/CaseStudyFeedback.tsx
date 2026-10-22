@@ -6,6 +6,8 @@ import ShareButton from "@/components/shared/ShareButton";
 import FeedbackContainer from "@/components/shared/FeedbackContainer";
 import FeedbackWizard from "@/components/shared/FeedbackWizard";
 import FeedbackAggregate from "@/components/shared/FeedbackAggregate";
+import FeedbackPopup from "@/components/shared/FeedbackPopup";
+import FeedbackOverlay from "@/components/shared/FeedbackOverlay";
 import type {
   CaseStudySlug,
   FeedbackAnswers,
@@ -114,12 +116,25 @@ interface CaseStudyFeedbackProps {
    * the first place (see the note above).
    */
   variant?: "stacked" | "centered";
+  /**
+   * Present the wizard and the aggregate in a right-side panel (md+) / bottom
+   * sheet instead of expanding the row in place. The row, the stored-response
+   * edit flow, storage and the auto-close are identical.
+   */
+  overlay?: boolean;
+  /** Ask for an optional name + email on the last step (UltraAI). */
+  collectContact?: boolean;
+  /** Label of the wizard's final button. */
+  submitLabel?: string;
 }
 
 export default function CaseStudyFeedback({
   caseStudySlug,
   singleSelectQuestion,
   variant = "stacked",
+  overlay = false,
+  collectContact = false,
+  submitLabel,
 }: CaseStudyFeedbackProps) {
   const centered = variant === "centered";
   const buttonClass = `${buttonBase} ${
@@ -136,6 +151,9 @@ export default function CaseStudyFeedback({
   // Cancel-then-reopen inside that ~200ms window could resume the SAME
   // still-mounted FeedbackWizard at whatever step it was left on.
   const [wizardKey, setWizardKey] = useState(0);
+  // Which card the overlay holds. Set on open and on submit and never reset on
+  // close, so the card does not swap to the other one while it slides away.
+  const [overlayView, setOverlayView] = useState<"wizard" | "aggregate">("wizard");
   // Holds the auto-collapse timer scheduled after a submission lands on
   // "submitted" (see handleSubmit) — a ref, not state, since it's write-
   // only bookkeeping for cleanup, not something that should trigger a
@@ -147,6 +165,7 @@ export default function CaseStudyFeedback({
   const openWizard = () => {
     clearTimeout(collapseTimer.current);
     setWizardKey((k) => k + 1);
+    setOverlayView("wizard");
     setStage("expanded");
   };
 
@@ -190,6 +209,7 @@ export default function CaseStudyFeedback({
       // graceful degradation — FeedbackAggregate's own count < 3 fallback covers this.
     }
     setAggregate(data);
+    setOverlayView("aggregate");
     setSubmitting(false);
     setStage("submitted");
 
@@ -243,10 +263,46 @@ export default function CaseStudyFeedback({
       full
     );
 
+  const wizardEl = overlay ? (
+    <FeedbackPopup
+      key={wizardKey}
+      singleSelectQuestion={singleSelectQuestion}
+      initialAnswers={stored ?? undefined}
+      submitting={submitting}
+      onCancel={handleCancel}
+      onSubmit={handleSubmit}
+      collectContact={collectContact}
+      submitLabel={submitLabel}
+    />
+  ) : (
+    <FeedbackWizard
+      key={wizardKey}
+      singleSelectQuestion={singleSelectQuestion}
+      initialAnswers={stored ?? undefined}
+      submitting={submitting}
+      onCancel={handleCancel}
+      onSubmit={handleSubmit}
+    />
+  );
+  // In the overlay the popup card is already the surface, so the aggregate
+  // sits bare inside it rather than in its own bordered card.
+  const aggregateEl = aggregate && (
+    <div
+      className={
+        overlay
+          ? "flex w-full flex-col gap-24px"
+          : "flex flex-col gap-24px w-full p-24px rounded-md border border-border-default bg-bg-surface"
+      }
+    >
+      <FeedbackAggregate data={aggregate} singleSelectQuestion={singleSelectQuestion} />
+    </div>
+  );
+
   return (
+    <>
     <FeedbackContainer>
       <AnimatePresence mode="popLayout" initial={false}>
-        {stage === "collapsed" && (
+        {(stage === "collapsed" || overlay) && (
           <motion.div
             key="collapsed"
             initial={{ opacity: 0 }}
@@ -316,7 +372,7 @@ export default function CaseStudyFeedback({
           </motion.div>
         )}
 
-        {stage === "expanded" && (
+        {!overlay && stage === "expanded" && (
           <motion.div
             key="expanded"
             initial={{ opacity: 0 }}
@@ -325,18 +381,11 @@ export default function CaseStudyFeedback({
             transition={{ duration: 0.2 }}
             className="w-full"
           >
-            <FeedbackWizard
-              key={wizardKey}
-              singleSelectQuestion={singleSelectQuestion}
-              initialAnswers={stored ?? undefined}
-              submitting={submitting}
-              onCancel={handleCancel}
-              onSubmit={handleSubmit}
-            />
+            {wizardEl}
           </motion.div>
         )}
 
-        {stage === "submitted" && aggregate && (
+        {!overlay && stage === "submitted" && aggregate && (
           <motion.div
             key="submitted"
             initial={{ opacity: 0 }}
@@ -350,5 +399,15 @@ export default function CaseStudyFeedback({
         )}
       </AnimatePresence>
     </FeedbackContainer>
+    {overlay && (
+      <FeedbackOverlay
+        open={stage !== "collapsed"}
+        onClose={handleCancel}
+        label="Give feedback"
+      >
+        {overlayView === "aggregate" && aggregateEl ? aggregateEl : wizardEl}
+      </FeedbackOverlay>
+    )}
+    </>
   );
 }
