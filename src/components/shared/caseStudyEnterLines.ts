@@ -29,6 +29,6 @@ export interface EnterTitleLines {
 // Source of truth for `md`: Figma node 7438:44091 ("case study enter
 // animation"), frames 1-3.
 export const FASTROUTER_ENTER_LINES: EnterTitleLines = {
-  base: ["Enterprise AI teams", "were flying blind on", "every model decision."],
-  md: ["Enterprise AI teams were", "flying blind on every", "model decision."],
+  base: ["Flying blind on", "every model decision."],
+  md: ["Flying blind on", "every model decision."],
 };

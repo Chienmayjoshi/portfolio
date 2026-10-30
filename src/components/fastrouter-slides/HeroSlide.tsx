@@ -152,10 +152,10 @@ export default function HeroSlide() {
                 canonical arrangement and the measurements behind it. Keep this
                 markup and that file in step.
 
-                  below md:  Enterprise AI teams / were flying blind on /
-                             every model decision.
-                  md and up: Enterprise AI teams were / flying blind on every /
-                             model decision.
+                  every width: Flying blind on / every model decision.
+                  (the headline was shortened 2026-10-28, direct instruction;
+                  it is two lines at both breakpoints now, so the old
+                  per-breakpoint <br> toggling below is no longer needed)
 
                 Why it's pinned (direct instruction, 2026-09-05/06): the case
                 study enter animation (Figma node 7438:44091) builds its big
@@ -173,28 +173,16 @@ export default function HeroSlide() {
                 Figma node. Deliberate - this one follows the animation
                 reference because this is what the animation lands on.
 
-                Done with toggled <br>s rather than duplicated spans so the
-                sentence exists once: display:none on a <br> suppresses its
-                break, so exactly one pair is live at any width. That keeps a
-                single copy of the headline in the document (no duplicate h1
-                text for screen readers or crawlers) and keeps word ORDER
-                identical at every width, which is the only thing the
-                animation's index pairing depends on. The {" "} separators
-                matter: they're what keeps the words apart when the <br>
-                between them is the hidden one. */}
+                One <br> now; the {" "} keeps the words apart in the text
+                content. Word ORDER is what the
+                animation's index pairing depends on. */}
             <h1
               data-enter-title
               className="w-full font-display text-text-primary text-slide-title-sm md:text-slide-title"
             >
-              Enterprise AI teams
-              <br className="md:hidden" />{" "}
-              were
-              <br className="hidden md:inline" />{" "}
-              flying blind on
-              <br className="md:hidden" />{" "}
-              every
-              <br className="hidden md:inline" />{" "}
-              model decision.
+              Flying blind on
+              <br />{" "}
+              every model decision.
             </h1>
 
             {/* py-32 (was py-40): real mobile value, node 7255:7303. */}
@@ -203,9 +191,9 @@ export default function HeroSlide() {
               className="w-full border-border-frame border-t py-32px md:py-40px"
             >
               <p className="font-ui font-normal text-[17px] text-text-primary leading-[28px] tracking-[0.085px]">
-                I designed three features for FastRouter that gave teams
-                their first systematic way to monitor cost, validate model
-                quality, and reach a trusted verdict.
+                Enterprise AI teams had no systematic way to see cost or check
+                quality. I designed three features that gave them one: monitor
+                cost, validate models, reach a trusted verdict.
               </p>
             </div>
           </div>

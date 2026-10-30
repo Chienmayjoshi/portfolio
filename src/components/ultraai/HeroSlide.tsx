@@ -73,16 +73,14 @@ export default function HeroSlide() {
 
           <div className="flex w-full flex-col items-start gap-24px md:gap-32px">
             <h1 className="w-full font-display text-text-primary text-slide-title-sm md:text-slide-title">
-              Turning a single AI chatbot into a system nine domain experts
-              run on.
+              One chatbot. Nine experts.
             </h1>
 
             <div className="w-full border-border-frame border-t py-32px md:py-40px">
               <p className="font-ui font-normal text-[17px] text-text-primary leading-[28px] tracking-[0.085px]">
                 A chatbot is only as valuable as its one conversation.
                 UltraAI runs on domain experts, each with its own home and
-                signature feature, as one unified app or its own standalone
-                app.
+                signature feature, as one app or standalone.
               </p>
             </div>
           </div>

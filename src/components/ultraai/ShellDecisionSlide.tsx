@@ -13,6 +13,7 @@ import {
 import GridDepthLayer from "@/components/shared/GridDepthLayer";
 import ThemeAwareVideo from "@/components/shared/ThemeAwareVideo";
 import ThemeSwap from "@/components/shared/ThemeSwap";
+import HighlightedHeadline from "@/components/shared/HighlightedHeadline";
 
 // Decision slides for The Shell chapter. Decision 01 — "Home stays in the
 // bottom nav" — is Figma desktop node 7753:176288 (light) / 7753:175497 (dark
@@ -56,6 +57,16 @@ interface ShellDecisionLayoutProps {
   why: string;
   /** The right-hand (mobile: middle) visual, sized by its own classes. */
   visual: React.ReactNode;
+  /** Short layout, same as fastrouter-slides' converted decisions: one
+   * paragraph plus a "Gave up {gaveUpShort}" line replace the Chose / Gave up /
+   * Why? blocks. `chose`, `gaveUp` and `why` stay required so a decision can
+   * be switched back. */
+  body?: React.ReactNode;
+  gaveUpShort?: string;
+  /** Words in a string `headline` to mark with the highlighter and squiggle. */
+  highlight?: string;
+  /** From the deck; starts the highlight drawing on first entry. */
+  active?: boolean;
 }
 
 // The frame every Shell decision shares: ghost number, accent eyebrow,
@@ -71,6 +82,10 @@ function ShellDecisionLayout({
   gaveUp,
   why,
   visual,
+  body,
+  gaveUpShort,
+  highlight,
+  active,
 }: ShellDecisionLayoutProps) {
   const blocks = [
     { label: "Chose", text: chose },
@@ -107,7 +122,11 @@ function ShellDecisionLayout({
             </div>
             <h2 className="font-display text-slide-title-sm text-text-primary md:text-slide-title">
               {typeof headline === "string" ? (
-                headline
+                <HighlightedHeadline
+                  text={headline}
+                  highlight={highlight}
+                  active={active}
+                />
               ) : (
                 <>
                   {headline[0]} <br className="hidden md:block" />
@@ -118,16 +137,27 @@ function ShellDecisionLayout({
           </div>
 
           <div className="order-2 flex flex-col gap-24px md:order-none md:gap-32px">
-            {blocks.map((b) => (
-              <div key={b.label} className="flex flex-col gap-8px">
-                <p className="font-mono text-[13px] text-text-muted uppercase leading-[18px] tracking-[0.78px]">
-                  {b.label}
-                </p>
+            {body && gaveUpShort ? (
+              <>
                 <div className="font-ui font-normal text-[16px] text-text-primary leading-[28px] tracking-[0.08px]">
-                  {b.text}
+                  {body}
                 </div>
-              </div>
-            ))}
+                <p className="font-ui font-normal text-[16px] text-text-primary leading-[28px] tracking-[0.08px]">
+                  Gave up {gaveUpShort}
+                </p>
+              </>
+            ) : (
+              blocks.map((b) => (
+                <div key={b.label} className="flex flex-col gap-8px">
+                  <p className="font-mono text-[13px] text-text-muted uppercase leading-[18px] tracking-[0.78px]">
+                    {b.label}
+                  </p>
+                  <div className="font-ui font-normal text-[16px] text-text-primary leading-[28px] tracking-[0.08px]">
+                    {b.text}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -202,7 +232,11 @@ export function ShellDecision01Slide({ active }: { active?: boolean }) {
     <ShellDecisionLayout
       id="shell-decision-01"
       number="01"
-      headline={["Home stays in", "the bottom nav"]}
+      headline="The For You tab isn't an expert"
+      highlight="isn't an expert"
+      active={active}
+      body={`The first tab said "Experts," but the For You tab isn't an expert. It's the layer that orchestrates them. So the tab is now "Home," and it always takes you back to where you started: For You, or an expert's own dashboard.`}
+      gaveUpShort={`the "Experts" label, which also looked the same on the hub and deep inside an expert`}
       chose={`The first bottom nav tab changed from "Experts" to "Home." It always takes you back to where you started, the For You hub or an expert's own dashboard.`}
       gaveUp={`"Experts" just meant you were somewhere in that section. It looked the same whether you were on the main hub or deep inside an expert.`}
       why="People need one fast way back to their starting point, from anywhere in the app."
@@ -384,12 +418,16 @@ function NavAdaptsVisual() {
   );
 }
 
-export function ShellDecision02Slide() {
+export function ShellDecision02Slide({ active }: { active?: boolean }) {
   return (
     <ShellDecisionLayout
       id="shell-decision-02"
       number="02"
-      headline={["The nav adapts to", "where you are"]}
+      headline="The nav adapts to where you are"
+      highlight="adapts"
+      active={active}
+      body="A user is either on For You or inside an expert, so the nav has two shapes. On For You it shows Home, Tools and Chat. Inside an expert it shows Home, Signature, Explore and Chat. Standalone has no orchestration layer, so it only uses the second."
+      gaveUpShort="building a separate standalone nav later, whenever the business decided to launch one"
       chose="One nav component, two shapes. On For You it shows Home, Tools, Chat. Inside an expert it shows Home, Signature, Explore, Chat. Standalone apps only use the second shape."
       gaveUp="Building a separate standalone nav later, whenever the business decided to launch one."
       why="A user is either on For You or inside an expert, so the unified app needs two shapes. Standalone has no For You, so it only needs the one."
@@ -418,7 +456,11 @@ export function ShellDecision03Slide({ active }: { active?: boolean }) {
     <ShellDecisionLayout
       id="shell-decision-03"
       number="03"
-      headline={["Expert pinning, capped", "at four"]}
+      headline="Expert pinning, capped at four"
+      highlight="capped at four"
+      active={active}
+      body="The top bar is where people switch experts, so pinning moved there from the sidebar. It now caps at four, which keeps the bar easy to scan and stops the list growing out of control."
+      gaveUpShort="an unlimited pinned list tucked behind the menu"
       chose="Pinning already existed as an uncapped list in the sidebar. It moved into the top bar and now caps at four."
       gaveUp="An unlimited pinned list tucked behind the menu."
       why="A hidden, unlimited list is hard to find and can still grow out of control. The top bar is where people switch experts, and four keeps it easy to scan."
@@ -457,7 +499,11 @@ export function ShellDecision04Slide({ active }: { active?: boolean }) {
     <ShellDecisionLayout
       id="shell-decision-04"
       number="04"
-      headline={["Color as wayfinding,", "not branding"]}
+      headline="Color as wayfinding, not branding"
+      highlight="wayfinding"
+      active={active}
+      body="With nine experts in one app, color is the fastest way to know who you’re talking to, faster than reading a label every time. So each expert gets its own accent, used consistently on buttons, chips and icons."
+      gaveUpShort="one shared brand color for the whole app, with experts told apart only by their avatar and name"
       chose="Every expert gets its own accent color, used consistently on buttons, chips, and icons."
       gaveUp="One shared brand color for the whole app, with experts told apart only by their avatar and name."
       why="With nine experts in one app, color is the fastest way to know who you’re talking to, faster than reading a label every time."
@@ -598,12 +644,16 @@ function OnboardingComposite() {
   );
 }
 
-export function ShellDecision05Slide() {
+export function ShellDecision05Slide({ active }: { active?: boolean }) {
   return (
     <ShellDecisionLayout
       id="shell-decision-05"
       number="05"
-      headline={["Ask for data when it’s", "needed."]}
+      headline="Ask for data when it’s needed"
+      highlight="when it’s needed"
+      active={active}
+      body="Asking less is not always better. Veda is useful with almost nothing, so she starts with a sun sign. A workout plan is useless without body metrics, so Flex asks for them on day one. Each expert asks at the point of need, so people get value sooner."
+      gaveUpShort="one onboarding flow for every expert, which would ask everyone for everything up front"
       chose="Every expert asks for data only when a feature needs it. Veda’s first features need just a sun sign, so she starts light. Flex’s first feature needs body metrics, so he asks on day one."
       gaveUp="One onboarding flow for every expert."
       why="Asking less is not always better. Veda is useful with almost nothing, while a workout plan is useless without body metrics. Asking at the point of need gives people value sooner."
@@ -696,13 +746,17 @@ function VedaOnboardingStack() {
   );
 }
 
-export function VedaDecision01Slide() {
+export function VedaDecision01Slide({ active }: { active?: boolean }) {
   return (
     <ShellDecisionLayout
       id="veda-decision-01"
       number="01"
       chapter="Veda"
       headline="Onboarding by intent"
+      highlight="intent"
+      active={active}
+      body="Onboarding starts with what you came for. Your focus areas set what shows up first, and your experience level sets how Veda talks to you. Full birth details are more personal than a sun sign, so Veda asks for them later, only when a feature like the birth chart needs them."
+      gaveUpShort="one long signup screen asking for birth date, time and location before showing anything"
       chose="Onboarding starts with what you came for. Your focus areas set what shows up first, and your experience level sets how Veda talks to you. Every expert starts this way."
       gaveUp="One long signup screen asking for birth date, time, and location before showing anything."
       why="Full birth details are more personal than a sun sign. Veda asks for them later, only when a feature like the birth chart needs them."
@@ -764,13 +818,17 @@ function VedaSpreadsVisual() {
   );
 }
 
-export function VedaDecision02Slide() {
+export function VedaDecision02Slide({ active }: { active?: boolean }) {
   return (
     <ShellDecisionLayout
       id="veda-decision-02"
       number="02"
       chapter="Veda"
-      headline="Tarot’s credit economy"
+      headline="Free draws, paid insight"
+      highlight="paid insight"
+      active={active}
+      body="Free draws give people a reason to come back every day, so drawing a card is free and unlimited. Only the AI insight on a card costs a credit, the one moment worth paying for, and the cost shows on the button before you tap."
+      gaveUpShort="charging for the draw"
       chose="Tarot is Veda’s signature feature. Drawing a card is free and unlimited, and only the AI insight on a card costs a credit. The cost shows on the button before you tap."
       gaveUp="Charging a credit for every action, including the draw."
       why="Free draws give people a reason to come back every day. The credit sits only on the interpretation, the one moment worth paying for."
@@ -981,7 +1039,11 @@ export function PaywallDecision01Slide({ active }: { active?: boolean }) {
       id="paywall-decision-01"
       number="01"
       chapter="Paywall"
-      headline={["Three templates, real", "intent trigger"]}
+      headline="Three templates, real intent trigger"
+      highlight="real intent trigger"
+      active={active}
+      body="A paywall that appears too early feels like an interruption. One that appears right after a real wall feels fair, because the person already knows what they’re missing. So every paywall is one of three formats: a bottom sheet for one blocked action, a feature paywall for a bigger ask, or a full subscribe screen."
+      gaveUpShort="one upgrade screen"
       chose="Every paywall uses one of three formats: a bottom sheet for one blocked action, a feature paywall for a bigger ask, or a full subscribe screen. None of them appear until someone hits a real wall."
       gaveUp="One upgrade screen used everywhere, and prompts shown before someone has anything to lose."
       why="A paywall that appears too early feels like an interruption. One that appears right after a real wall feels fair, because the person already knows what they’re missing."
@@ -1062,7 +1124,7 @@ function PaywallPlacesVisual() {
   );
 }
 
-export function PaywallDecision02Slide() {
+export function PaywallDecision02Slide({ active }: { active?: boolean }) {
   const places = [
     "A feature’s detail page",
     "When chat credits run out",
@@ -1075,7 +1137,23 @@ export function PaywallDecision02Slide() {
       id="paywall-decision-02"
       number="02"
       chapter="Paywall"
-      headline={["The paywall shows in", "five places only"]}
+      headline="The paywall doesn’t chase you"
+      highlight="doesn’t chase you"
+      active={active}
+      body={
+        <>
+          Five is a limit. Leaving other tempting spots out on purpose keeps the
+          paywall from chasing people around the app. It only appears in:
+          <ul className="mt-8px grid list-disc grid-cols-1 gap-x-8px gap-y-8px ps-[24px] marker:text-text-primary md:grid-cols-2">
+            {places.map((p) => (
+              <li key={p} className="md:whitespace-nowrap">
+                {p}
+              </li>
+            ))}
+          </ul>
+        </>
+      }
+      gaveUpShort="adding an upgrade prompt wherever a screen felt empty"
       chose={
         <>
           The paywall appears in only five places:
@@ -1113,7 +1191,11 @@ export function FlexDecision01Slide({ active }: { active?: boolean }) {
       id="flex-decision-01"
       number="01"
       chapter="Flex"
-      headline={["Every expert gets a", "signature slot"]}
+      headline="Every expert gets a signature slot"
+      highlight="signature slot"
+      active={active}
+      body="People should learn where an expert’s main feature lives once, and have it work for every expert after. So each expert has one signature feature in the same bottom nav slot: Tarot for Veda, Workout Session for Flex. Flex proves it, a very different domain in the same slot."
+      gaveUpShort="custom navigation per expert"
       chose="Each expert has one signature feature, in the same bottom nav slot. Tarot for Veda, Workout Session for Flex. Same nav component, different feature behind it."
       gaveUp="Custom navigation for each expert’s main feature."
       why="People learn where an expert’s main feature lives once, and it works for every expert after. Flex proves it: a very different domain, same slot."
@@ -1149,7 +1231,11 @@ export function FlexDecision02Slide({ active }: { active?: boolean }) {
       id="flex-decision-02"
       number="02"
       chapter="Flex"
-      headline={["Flex asks for body", "metrics on day one"]}
+      headline="Flex asks for body metrics on day one"
+      highlight="day one"
+      active={active}
+      body="A workout plan doesn’t work without body metrics, so Flex needs them on day one. Veda’s first features need almost nothing, so she asks later. It’s the same rule: ask when a feature needs it."
+      gaveUpShort="asking gradually, the way Veda does"
       chose="Flex asks for body metrics, like height and weight, at the start of onboarding. It is the same data ask rule as Veda’s, with the opposite result."
       gaveUp="Asking gradually, the way Veda does."
       why="A workout plan doesn’t work without body metrics, so Flex needs them on day one. Veda’s first features need almost nothing, so she asks later. The rule stays the same and the answer follows the feature."

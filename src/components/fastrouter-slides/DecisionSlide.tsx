@@ -6,6 +6,7 @@ import GridDepthLayer from "@/components/shared/GridDepthLayer";
 import ThemeSwap from "@/components/shared/ThemeSwap";
 import ThemeAwareVideo from "@/components/shared/ThemeAwareVideo";
 import DecisionAssetFrame from "@/components/shared/DecisionAssetFrame";
+import HighlightedHeadline from "@/components/shared/HighlightedHeadline";
 
 // Reusable TEMPLATE for a single "decision" slide in the fastrouter-slides
 // deck, plus the decisions themselves — four for Council, two for
@@ -74,13 +75,23 @@ interface AssetMode extends AssetSource {
 // third mode would need a different control, so the type says two.
 type DecisionAsset =
   | ({ kind: "image" | "video" } & AssetSource)
-  | { kind: "toggle"; modes: readonly [AssetMode, AssetMode] };
+  | { kind: "toggle"; modes: readonly [AssetMode, AssetMode] }
+  // Anything that needs its own treatment inside the frame (e.g. Extensions'
+  // portrait gesture-seam recording, panned by GSAP) — the caller supplies the
+  // content, the frame still draws the capsule.
+  | { kind: "custom"; node: React.ReactNode };
 
-interface Decision {
+export interface Decision {
   id: string;
   number: string;
   chapter: string;
   headline: string;
+  /** Words inside `headline` to mark with the green highlighter and the blue
+   * squiggle (Figma decision 01, node 8168:47725). Must be a substring. */
+  highlight?: string;
+  /** Short-form copy: one paragraph plus a "Gave up {gaveUp}" line, replacing
+   * the three Chose / Gave up / Why blocks. Only decision 01 uses it so far. */
+  body?: string;
   /** Accented line directly under the headline — same treatment as `quote`,
    * different slot. Only decision 02 has one. */
   subtitle?: string;
@@ -102,8 +113,10 @@ export const COUNCIL_DECISIONS: readonly Decision[] = [
     number: "01",
     chapter: "LLM COUNCIL",
     headline: "Verdict-first layout",
+    highlight: "Verdict-first",
+    body: "The verdict sits at the top, with arguments and peer review below, so readers see it before they form their own opinion.",
     chose: "Final verdict at the top. Arguments and peer review stacked below.",
-    gaveUp: "Chronological order — the narrative journey the team expected.",
+    gaveUp: "the Chronological order",
     why: "If users read arguments first they form an opinion before the verdict arrives. Showing the verdict cold preserves its objectivity as an independent signal.",
     quote: "“The team pushed back. I held the position.”",
     asset: {
@@ -118,10 +131,12 @@ export const COUNCIL_DECISIONS: readonly Decision[] = [
     number: "02",
     chapter: "LLM COUNCIL",
     headline: "Progressive step visibility",
+    highlight: "Progressive",
+    body: "Arguments, peer review and the final verdict each show as they run, with a sticky status bar tracking the active stage. Watching it run is how users learn what Council does.",
     subtitle: "Arguments → Peer Review → Verdict",
     chose:
       "Each stage visible as it runs — Arguments → Peer Review → Final Verdict. Sticky status bar tracks the active stage.",
-    gaveUp: "Loading spinner → result. Less complexity, faster implementation.",
+    gaveUp: "the loading spinner",
     why: "Without visible stages the verdict is a black box. The three-stage visibility manages the wait and teaches users how Council works just by watching it run. Process visibility is proof of rigour.",
     asset: {
       kind: "video",
@@ -135,9 +150,11 @@ export const COUNCIL_DECISIONS: readonly Decision[] = [
     number: "03",
     chapter: "LLM COUNCIL",
     headline: "Presets as onboarding strategy",
+    highlight: "Presets",
+    body: "The first thing users see is a curated library of ready-to-run councils, so they experience what Council does before they configure one. After launch, users asked for more presets.",
     chose:
       "A curated preset library is the first thing users see — predefined councils for specific use cases, ready to run.",
-    gaveUp: "Blank canvas with a Create Council button.",
+    gaveUp: "the blank canvas",
     why: "Council is a genuinely novel concept. A blank canvas fails when the concept itself is unfamiliar. Presets let users experience what Council does before they configure it. Post-launch: more presets were requested — the strategy worked.",
     asset: {
       kind: "image",
@@ -150,11 +167,12 @@ export const COUNCIL_DECISIONS: readonly Decision[] = [
     id: "council-decision-04",
     number: "04",
     chapter: "LLM COUNCIL",
-    headline: "Tabs over cards + persistent member strip",
+    headline: "Tabs over cards",
+    highlight: "Tabs",
+    body: "Members review in parallel, and each gets a tab, so you can switch between their outputs. A persistent strip keeps all members visible, even with the config panel collapsed, so users never wonder which models are active.",
     chose:
       "Each council member as a tab. Persistent strip shows all members, visible even when the config panel is collapsed.",
-    gaveUp:
-      "Card grid showing all models at once — mirrors the Playground layout.",
+    gaveUp: "the card grid",
     why: "Cards signal parallel comparison. In peer review you're reading each member's independent evaluation sequentially. Tabs signal that correctly. The strip removes mid-session anxiety about which models are active.",
     asset: {
       kind: "video",
@@ -187,10 +205,12 @@ export const OBSERVABILITY_DECISIONS: readonly Decision[] = [
     id: "observability-decision-01",
     number: "01",
     chapter: "OBSERVABILITY",
-    headline: "Two filter layers — global + card-level",
+    headline: "Two layers of filters",
+    highlight: "Two layers",
+    body: "Global filters control the whole dashboard. Card-level filters let you investigate one card without changing it. Seeing the big picture and digging into detail are different modes of thinking, so each gets its own layer.",
     chose:
       "Global filters control the whole dashboard. Card-level filters allow tactical investigation without changing global context.",
-    gaveUp: "Single filter layer — simpler to build and explain.",
+    gaveUp: "the single filter layer, which was simpler to build and explain",
     why: "Strategic analysis and tactical investigation are different cognitive modes. One filter for both forces constant context-switching.",
     asset: {
       kind: "video",
@@ -204,9 +224,11 @@ export const OBSERVABILITY_DECISIONS: readonly Decision[] = [
     number: "02",
     chapter: "OBSERVABILITY",
     headline: "Information hierarchy as priority stack",
+    highlight: "priority stack",
+    body: "Someone arriving after an unexpected bill spike needs the most relevant answer first, so the sections follow the order of their questions: what's consuming usage, how much overall, how it's trending, then how fast and reliable it is.",
     chose:
       "Section order follows the user's question sequence: what's consuming usage → how much overall → how it's trending → how fast and reliable.",
-    gaveUp: "Conventional layout ordered by visual balance.",
+    gaveUp: "the layout ordered by visual balance",
     why: "A user arriving after an unexpected bill spike hits the most relevant information first, not buried three scrolls down.",
     asset: {
       kind: "video",
@@ -272,11 +294,17 @@ function ToggleCapsule({
   const [activeIndex, setActiveIndex] = useState(0);
 
   return (
-    <div className={`flex flex-col items-start gap-16px ${className ?? ""}`}>
+    // On desktop the pill hangs ABOVE the frame (absolute, bottom-full) rather
+    // than sitting in the flow, so the wrapper is exactly the frame and its top
+    // lines up with the text column like every other decision. In the stacked
+    // mobile layout it stays in the flow.
+    <div
+      className={`flex flex-col items-start gap-16px md:relative md:block ${className ?? ""}`}
+    >
       <div
         role="group"
         aria-label="Report mode"
-        className="flex h-[44px] items-center rounded-full bg-border-frame p-4px"
+        className="flex h-[44px] items-center rounded-full bg-border-frame p-4px md:absolute md:bottom-full md:left-0 md:mb-16px"
       >
         {modes.map((mode, i) => {
           const active = i === activeIndex;
@@ -331,10 +359,11 @@ export const EVALUATIONS_DECISIONS: readonly Decision[] = [
     number: "01",
     chapter: "EVALUATIONS",
     headline: "Fast Evals as the on-ramp",
+    highlight: "Fast Evals",
+    body: "The full evaluation form is powerful but front-loaded. Fast Evals pre-fills everything from your activity logs, so one choice, Smart or Custom, gets you a first result and builds the habit the full path rewards.",
     chose:
       "Pre-fills everything from your activity logs. One choice: Smart or Custom. Run immediately.",
-    gaveUp:
-      "Requiring users to configure dataset, models, and metrics before seeing any result.",
+    gaveUp: "configuring everything before the first result",
     why: "The full form is powerful but front-loaded. Fast Evals builds the habit the powerful path rewards.",
     asset: {
       kind: "video",
@@ -348,9 +377,10 @@ export const EVALUATIONS_DECISIONS: readonly Decision[] = [
     number: "02",
     chapter: "EVALUATIONS",
     headline: "Two ways to read an evaluation report",
+    highlight: "Two ways",
+    body: "Users read a report at different stages, so it has two modes. Single View shows one model's run in detail. Compare Mode puts models side by side. Neither has to filter out the other's job.",
     chose: "Two distinct report modes, each answering a different question.",
-    gaveUp:
-      "A single combined view — all models, all prompts, all scores on one screen.",
+    gaveUp: "one screen with all models, prompts and scores",
     why: "Each mode serves a user at a different stage. Mixing them forces everyone to filter out what they don’t need every time.",
     asset: {
       kind: "toggle",
@@ -383,6 +413,11 @@ function DecisionCapsule({
 }) {
   if (asset.kind === "toggle") {
     return <ToggleCapsule modes={asset.modes} className={className} />;
+  }
+  if (asset.kind === "custom") {
+    return (
+      <DecisionAssetFrame className={className}>{asset.node}</DecisionAssetFrame>
+    );
   }
 
   return (
@@ -430,8 +465,10 @@ function AccentLine({ children }: { children: string }) {
 
 export default function DecisionSlide({
   decision = COUNCIL_DECISIONS[0],
+  active,
 }: {
   decision?: Decision;
+  active?: boolean;
 }) {
   return (
     <section
@@ -456,7 +493,7 @@ export default function DecisionSlide({
           order. Same technique the vertical-scroll route uses for the same
           layout (FiveDecisions.tsx). */}
       <div className="relative z-10 w-full px-20px pt-32px md:flex md:h-full md:items-center md:px-80px md:pt-0">
-        <div className="flex w-full flex-col gap-24px md:mx-auto md:max-w-[1280px] md:flex-row md:items-center md:gap-40px">
+        <div className="flex w-full flex-col gap-24px md:mx-auto md:max-w-[1280px] md:flex-row md:items-start md:gap-[56px]">
           {/* Text column. 24px rhythm on mobile (inherited from the parent,
               since this is `contents` there), 56px on desktop. */}
           <div className="contents md:flex md:w-[520px] md:shrink-0 md:flex-col md:gap-[56px]">
@@ -475,7 +512,11 @@ export default function DecisionSlide({
                 </span>
               </div>
               <h1 className="font-display text-slide-title-sm text-text-primary md:text-slide-title">
-                {decision.headline}
+                <HighlightedHeadline
+                  text={decision.headline}
+                  highlight={decision.highlight}
+                  active={active}
+                />
               </h1>
               {decision.subtitle && (
                 <AccentLine>{decision.subtitle}</AccentLine>
@@ -484,9 +525,25 @@ export default function DecisionSlide({
 
             {/* Chose / Gave up / Why */}
             <div className="order-3 flex flex-col gap-24px md:order-none">
-              <Rationale label="Chose">{decision.chose}</Rationale>
-              <Rationale label="Gave up">{decision.gaveUp}</Rationale>
-              <Rationale label="Why">{decision.why}</Rationale>
+              {decision.body ? (
+                <>
+                  {/* Blank line in `body` = new paragraph. */}
+                  <div className="flex flex-col gap-16px font-ui font-normal text-[16px] text-text-primary leading-[28px] tracking-[0.08px]">
+                    {decision.body.split("\n\n").map((para) => (
+                      <p key={para}>{para}</p>
+                    ))}
+                  </div>
+                  <p className="font-ui font-normal text-[16px] text-text-primary leading-[28px] tracking-[0.08px]">
+                    Gave up {decision.gaveUp}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Rationale label="Chose">{decision.chose}</Rationale>
+                  <Rationale label="Gave up">{decision.gaveUp}</Rationale>
+                  <Rationale label="Why">{decision.why}</Rationale>
+                </>
+              )}
             </div>
 
             {decision.quote && (
@@ -497,12 +554,12 @@ export default function DecisionSlide({
           </div>
 
           {/* The single capsule — between headline and rationale on mobile
-              (order-2), right column on desktop. 520 + 40 gap + 720 = the
-              1280px row; below that it bleeds off the right edge, as Figma
+              (order-2), right column on desktop. 520 + 56 gap + 720 = a
+              1296px row, 16px wider than the 1280px box; below that it bleeds off the right edge, as Figma
               has it, clipped by the section's overflow-hidden. */}
           <DecisionCapsule
             asset={decision.asset}
-            className="order-2 md:order-none md:w-[720px] md:shrink-0"
+            className="order-2 drop-shadow-[-12px_-12px_12px_rgba(149,157,165,0.12)] md:order-none md:w-[720px] md:shrink-0 dark:drop-shadow-[-12px_-12px_12px_rgba(0,0,0,0.35)]"
           />
         </div>
       </div>
@@ -513,27 +570,35 @@ export default function DecisionSlide({
 // One bound slide per decision, so the deck registry in
 // fastrouter-slides/page.tsx stays a flat list of zero-prop components rather
 // than carrying decision data of its own.
-export function CouncilDecision01() {
-  return <DecisionSlide decision={COUNCIL_DECISIONS[0]} />;
+export function CouncilDecision01({ active }: { active?: boolean }) {
+  return <DecisionSlide decision={COUNCIL_DECISIONS[0]} active={active} />;
 }
-export function CouncilDecision02() {
-  return <DecisionSlide decision={COUNCIL_DECISIONS[1]} />;
+export function CouncilDecision02({ active }: { active?: boolean }) {
+  return <DecisionSlide decision={COUNCIL_DECISIONS[1]} active={active} />;
 }
-export function CouncilDecision03() {
-  return <DecisionSlide decision={COUNCIL_DECISIONS[2]} />;
+export function CouncilDecision03({ active }: { active?: boolean }) {
+  return <DecisionSlide decision={COUNCIL_DECISIONS[2]} active={active} />;
 }
-export function CouncilDecision04() {
-  return <DecisionSlide decision={COUNCIL_DECISIONS[3]} />;
+export function CouncilDecision04({ active }: { active?: boolean }) {
+  return <DecisionSlide decision={COUNCIL_DECISIONS[3]} active={active} />;
 }
-export function ObservabilityDecision01() {
-  return <DecisionSlide decision={OBSERVABILITY_DECISIONS[0]} />;
+export function ObservabilityDecision01({ active }: { active?: boolean }) {
+  return (
+    <DecisionSlide decision={OBSERVABILITY_DECISIONS[0]} active={active} />
+  );
 }
-export function ObservabilityDecision02() {
-  return <DecisionSlide decision={OBSERVABILITY_DECISIONS[1]} />;
+export function ObservabilityDecision02({ active }: { active?: boolean }) {
+  return (
+    <DecisionSlide decision={OBSERVABILITY_DECISIONS[1]} active={active} />
+  );
 }
-export function EvaluationsDecision01() {
-  return <DecisionSlide decision={EVALUATIONS_DECISIONS[0]} />;
+export function EvaluationsDecision01({ active }: { active?: boolean }) {
+  return (
+    <DecisionSlide decision={EVALUATIONS_DECISIONS[0]} active={active} />
+  );
 }
-export function EvaluationsDecision02() {
-  return <DecisionSlide decision={EVALUATIONS_DECISIONS[1]} />;
+export function EvaluationsDecision02({ active }: { active?: boolean }) {
+  return (
+    <DecisionSlide decision={EVALUATIONS_DECISIONS[1]} active={active} />
+  );
 }

@@ -721,6 +721,12 @@ export default function SlidesDeck({ variant = "full" }: SlidesDeckProps) {
         // outright: a hard swap at the halfway point and no drift. There is no
         // reduced form of "a mask sweeping across the screen" that is not still
         // a mask sweeping across the screen.
+        // Masks don't affect hit-testing, so a neighbouring slide that is "live"
+        // but almost fully masked (a sub-pixel scroll leaves the next one at a
+        // tiny reveal) would swallow clicks meant for the slide in view. Only
+        // the slide that is mostly visible takes pointer input.
+        el.style.pointerEvents = i === index ? "auto" : "none";
+
         const t = reduceMotionRef.current
           ? linearReveal < 0.5
             ? 0

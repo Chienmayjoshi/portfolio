@@ -97,6 +97,25 @@ export const ULTRAAI_NEXT: ReadNextTarget = {
   coverLabel: "[Analytics cover image]",
 };
 
+// The queue runs FastRouter -> UltraAI -> Analytics -> Extensions, and
+// Extensions' card points back to FastRouter to close the loop. Blurbs are the
+// Figma read-next cards' own lines (Analytics' frame).
+export const ANALYTICS_NEXT: ReadNextTarget = {
+  href: "/extensions",
+  title: "Extensions",
+  blurb:
+    "The previous team designed for the install. I designed for every new tab after it.",
+  coverLabel: "[Extensions cover image]",
+};
+
+export const EXTENSIONS_NEXT: ReadNextTarget = {
+  href: "/fastrouter-slides",
+  title: "FastRouter",
+  blurb:
+    "No existing pattern, 4 weeks, one novel architecture that the industry validated 6 months later.",
+  coverLabel: "[FastRouter cover image]",
+};
+
 // How long the line takes to fill before it navigates. Long enough to be
 // read as an offer and outrun by a scroll, short enough to actually complete
 // for someone who stops — the behaviour zainabkabira.com's pager uses to hand

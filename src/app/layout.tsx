@@ -71,6 +71,10 @@ import Script from "next/script";
 import Header from "@/components/shared/Header";
 import { HeaderProvider } from "@/components/shared/HeaderProvider";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
+import SplashGate from "@/components/shared/SplashGate";
+import { SPLASH_SKIP_SCRIPT } from "@/components/shared/splashSession";
+import AccentScope from "@/components/shared/AccentScope";
+import { ACCENT_INIT_SCRIPT } from "@/components/shared/caseStudyAccent";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -126,8 +130,19 @@ export default function RootLayout({
             })();
           `}
         </Script>
+        {/* Splash once-per-session: flags <html> before first paint if this
+            session has already seen it (see splashSession.ts). */}
+        {/* Per-study accent colour (see caseStudyAccent.ts / globals.css). */}
+        <Script id="accent-init" strategy="beforeInteractive">
+          {ACCENT_INIT_SCRIPT}
+        </Script>
+        <Script id="splash-skip" strategy="beforeInteractive">
+          {SPLASH_SKIP_SCRIPT}
+        </Script>
         <ThemeProvider>
+          <AccentScope />
           <HeaderProvider>
+            <SplashGate />
             <Header />
             {children}
           </HeaderProvider>

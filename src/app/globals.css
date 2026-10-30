@@ -48,7 +48,7 @@
   --color-border-frame: #D5D5D5;
   --color-text-primary: #0D0D0D;
   --color-text-muted: #6B6B6B;
-  --color-text-accent: #1A34D7;
+  --color-text-accent: var(--case-accent-light);
   --color-text-error: #C0392B;
   --color-text-success: #48A825;
   /* PROPOSED (not in design-tokens.json): the yellow marker behind the
@@ -195,6 +195,65 @@
    variable collection Dark mode exactly (VariableCollectionId:6263:8) —
    design-tokens.json's PROPOSED flags cleared accordingly, so dropped here
    too. */
+/* Title highlighter behind the marked words of a decision headline (Figma
+   "llm council - decision 01", node 8168:47725, Rectangle 9: #B9FF9F).
+   From Figma but not in design-tokens.json, so it still needs sign-off.
+   Declared on :root rather than inside @theme on purpose: Tailwind only emits
+   a theme variable once a generated utility uses it, and the dev server
+   dropped it, so the marker rendered with no fill. Read as a plain var(), it
+   always ships. .dark swaps in a saturated mid green: the light value would
+   wash out the light title text, and a translucent version of it read as a dull
+   olive on the dark surface. */
+:root {
+  /* Case-study accent. Every `text-accent` surface (eyebrows, CTAs, highlights)
+     reads --color-text-accent, which in each theme block above points at one of
+     these two. FastRouter's blue is the default; the other studies override the
+     pair through <html data-accent="..."> (set before paint by the script in
+     layout.tsx and kept current on navigation by AccentScope). They are set on
+     <html> and not on a page wrapper on purpose: a custom property that
+     references var() resolves where it is DECLARED, and the theme blocks are
+     declared on <html> and on nested .light / .dark / .chapter-intro-invert
+     elements, and portalled overlays sit outside any page wrapper. */
+  --case-accent-light: #1A34D7;
+  --case-accent-dark: #5C74E8;
+  --color-title-highlight: #B9FF9F;
+  /* Grey tilted panel behind the Problem slide's pick-a-model game (Figma node
+     8189:50954, #EFEFEF). Not in design-tokens.json, so it needs sign-off. The
+     dark value is mine: a step lighter than bg-primary (#1A1A1A), no Figma
+     reference exists for it. */
+  --color-game-panel: #EFEFEF;
+}
+
+/* Per-study accents. Brand values from direct instruction (2026-11). Dark values are the same
+   except UltraAI's and Extensions', which are lightened because #793FF7 and
+   #2F73D9 on #1A1A1A are only ~3.6:1. Extensions' is the blue of its logomark.
+   NOTE: #F46960 on the light page is ~3:1, below AA for 13px eyebrow text.
+   Flagged, not changed. */
+html[data-accent="ultraai"] {
+  --case-accent-light: #793FF7;
+  --case-accent-dark: #9B72FA;
+}
+html[data-accent="analytics"] {
+  --case-accent-light: #F46960;
+  --case-accent-dark: #F46960;
+}
+/* Analytics' title marker is a light yellow, not FastRouter's green. The
+   html.dark rule is separate because the attribute selector below outranks the
+   plain .dark block and would otherwise force the light value in dark mode.
+   Values are mine, not from Figma: #FFF08A on the light page, a deep gold in
+   dark mode where a pale yellow would wash out the light title text. */
+html[data-accent="analytics"] {
+  --color-title-highlight: #FFF08A;
+}
+html.dark[data-accent="analytics"] {
+  --color-title-highlight: #8C7200;
+}
+/* Extensions: the blue of its logomark. */
+html[data-accent="extensions"] {
+  --case-accent-light: #2F73D9;
+  --case-accent-dark: #5C97EC;
+}
+
 .dark {
   --color-bg-primary: #1A1A1A;
   --color-bg-surface: #282828;
@@ -203,9 +262,11 @@
   --color-border-frame: rgba(255, 255, 255, 0.14);
   --color-text-primary: #D9D9D9;
   --color-text-muted: #888888;
-  --color-text-accent: #5C74E8;
+  --color-text-accent: var(--case-accent-dark);
   --color-text-error: #E0685A;
   --color-text-success: #6FC24A;
+  --color-title-highlight: #2F9124;
+  --color-game-panel: #262626;
   /* FastRouter logo wordmark ink — crisp white on any dark surface, per the
      added fr-logomark-white.svg (#FAFAFA, not the muted #D9D9D9 text tone).
      Applies to .dark AND .chapter-intro-invert (both dark surfaces). */
@@ -232,9 +293,10 @@
   --color-border-frame: #D5D5D5;
   --color-text-primary: #0D0D0D;
   --color-text-muted: #6B6B6B;
-  --color-text-accent: #1A34D7;
+  --color-text-accent: var(--case-accent-light);
   --color-text-error: #C0392B;
   --color-text-success: #48A825;
+  --color-title-highlight: #B9FF9F;
   /* FastRouter logo wordmark ink — dark on any light surface (fr-logomark.svg).
      Applies to .light AND .dark .chapter-intro-invert (both light surfaces). */
   --fill-0: #0D0D0D;
@@ -259,7 +321,7 @@
   --color-border-frame: rgba(255, 255, 255, 0.14);
   --color-text-primary: #D9D9D9;
   --color-text-muted: #888888;
-  --color-text-accent: #5C74E8;
+  --color-text-accent: var(--case-accent-dark);
   --color-text-error: #E0685A;
   --color-text-success: #6FC24A;
   /* FastRouter logo wordmark ink — crisp white on any dark surface, per the
@@ -276,7 +338,7 @@
   --color-border-frame: #D5D5D5;
   --color-text-primary: #0D0D0D;
   --color-text-muted: #6B6B6B;
-  --color-text-accent: #1A34D7;
+  --color-text-accent: var(--case-accent-light);
   --color-text-error: #C0392B;
   --color-text-success: #48A825;
   /* FastRouter logo wordmark ink — dark on any light surface (fr-logomark.svg).
@@ -424,4 +486,24 @@ body {
     black calc(100% - 64px),
     transparent 100%
   );
+}
+
+/* Splash intro (SplashIntro.tsx): the nav and theme switch are page chrome and
+   are hidden while it plays by a <style> the component itself renders (so it is
+   in the server HTML). Removing that tag fades the header in through this
+   transition. Opacity only. */
+body > header {
+  transition: opacity 0.5s ease;
+}
+
+/* Splash: the overlay is in the server HTML so a first-time visitor never sees
+   the page flash before it. The pre-paint script flags <html> data-splash-skip
+   for anyone who has already seen it, and reduced-motion users never get it. */
+html[data-splash-skip] [data-splash-root] {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-splash-root] {
+    display: none;
+  }
 }

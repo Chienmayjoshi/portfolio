@@ -25,7 +25,7 @@ const projects: ProjectCardData[] = [
   {
     category: "FastRouter",
     year: "2026",
-    title: "Enterprise AI teams were flying blind on every model decision.",
+    title: "Flying blind on every model decision.",
     description:
       "No existing pattern, 4 weeks, one novel architecture that the industry validated 6 months later.",
     // The deck, not the vertical /fastrouter route: direct instruction

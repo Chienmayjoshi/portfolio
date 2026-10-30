@@ -495,6 +495,12 @@ export default function SlidesDeck() {
           hidden[i] = false;
         }
 
+        // Masks don't affect hit-testing, so a neighbouring slide that is "live"
+        // but almost fully masked (a sub-pixel scroll leaves the next one at a
+        // tiny reveal) would swallow clicks meant for the slide in view. Only
+        // the slide that is mostly visible takes pointer input.
+        el.style.pointerEvents = i === index ? "auto" : "none";
+
         const t = reduceMotionRef.current
           ? linearReveal < 0.5
             ? 0

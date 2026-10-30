@@ -1,4 +1,5 @@
 import GridDepthLayer from "@/components/shared/GridDepthLayer";
+import PickModelGame from "@/components/fastrouter-slides/PickModelGame";
 
 // Source of truth: Figma node 7039:61590 ("problem statement"), file
 // 2aoIFdaJMyNBEWeQESBEzG.
@@ -110,49 +111,6 @@ const MODEL_NAMES = [
   "Titan Text",
 ];
 
-const PROBLEM_PILLS = [
-  "No visibility into spend",
-  "No way to validate quality",
-  "No trusted path to a verdict",
-];
-
-// Mobile-only (node 7249:6413, "problem statement-mobile") — the fan/
-// depth-cascade treatment the original handoff doc specified and desktop
-// explicitly deferred (see this file's own header comment) turned up for
-// real on this mobile frame, so it's built here, scoped to mobile only —
-// desktop's flat row stays exactly as deferred, not extended to match.
-// Same "Figma repeats one string 3x" copy-paste pattern already flagged
-// above for the desktop row — reuses the same three distinct PROBLEM_PILLS
-// strings instead, front-to-back matching primary-to-tertiary. Border
-// colors are Figma's literal hex (#D9D9D9/#6B6B6B/#0D0D0D, a light-to-dark
-// depth step), not semantic tokens — this project's border scale only has
-// two steps (default/frame), nothing that maps to a three-step cascade.
-// Not verified for dark mode: the front card's near-black (#0D0D0D) border
-// would nearly disappear against a dark bg-bg-primary, and no dark-mode
-// version of this Figma frame exists to check against — flagging rather
-// than inventing a reversed-order treatment with no reference.
-function ProblemPillStack() {
-  return (
-    <div className="relative h-[78px] w-[263px] md:hidden">
-      <div className="-translate-x-1/2 absolute top-8px left-1/2 w-[263px] rounded-xl border border-[#D9D9D9] bg-bg-primary px-40px py-24px">
-        <span className="whitespace-nowrap font-ui font-semibold text-[14px] text-text-primary leading-[20px]">
-          {PROBLEM_PILLS[2]}
-        </span>
-      </div>
-      <div className="-translate-x-1/2 absolute top-4px left-1/2 w-[253px] rounded-xl border border-[#6B6B6B] bg-bg-primary px-40px py-24px">
-        <span className="whitespace-nowrap font-ui font-semibold text-[14px] text-text-primary leading-[20px]">
-          {PROBLEM_PILLS[1]}
-        </span>
-      </div>
-      <div className="absolute top-0 left-10px rounded-xl border border-[#0D0D0D] bg-bg-primary px-40px py-24px">
-        <span className="whitespace-nowrap font-ui font-semibold text-[14px] text-text-primary leading-[20px]">
-          {PROBLEM_PILLS[0]}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function ModelMarqueeColumn({ slow = false }: { slow?: boolean }) {
   return (
     <div
@@ -167,7 +125,7 @@ function ModelMarqueeColumn({ slow = false }: { slow?: boolean }) {
         {[...MODEL_NAMES, ...MODEL_NAMES].map((name, i) => (
           <span
             key={i}
-            className={`w-[240px] whitespace-nowrap font-ui text-[14px] text-text-muted leading-[20px] tracking-[0.07px] opacity-30 ${
+            className={`w-[240px] whitespace-nowrap font-ui text-[14px] text-text-muted leading-[20px] tracking-[0.07px] opacity-[0.14] ${
               i % 2 === 0 ? "text-right" : "text-left"
             }`}
           >
@@ -179,68 +137,46 @@ function ModelMarqueeColumn({ slow = false }: { slow?: boolean }) {
   );
 }
 
+// Layout is Figma node 7233:5531 / 8189:50954: left-aligned copy ("Problem" in the
+// error red) beside the pick-a-model game, with the ghost model names drifting
+// behind it. The copy is unchanged. The three pills the slide used to carry are
+// gone: the game's blank cost / quality / verdict dials say the same thing.
+//
+// The ghost columns are positioned on Figma's 1440 frame (x=750 and x=1040) and
+// sit behind the game, which is why they are `absolute` and not in the flex row.
 export default function ProblemSlide() {
   return (
-    // Mobile is top-anchored (pt-40, matches Hero's own mobile content
-    // start), not vertically centered like desktop — a real architecture
-    // difference confirmed against node 7249:6791, not a scaled-down
-    // version of desktop's centered layout.
     <section
       id="problem"
       className="relative flex h-full w-full flex-col items-start justify-start overflow-hidden bg-bg-primary md:items-center md:justify-center"
     >
-      {/* Mobile grid-layer size/position (top-32, h-200) matches Hero's
-          own mobile grid node exactly (7249:6414 vs 7255:6866 — identical
-          x/y/w/h) — genuinely the same decoration at the same size here,
-          not a coincidence worth re-deriving. Desktop unchanged. */}
       <GridDepthLayer className="absolute inset-x-0 top-32px h-[200px] w-full md:top-0 md:h-[600px]" />
 
-      <div className="relative z-10 flex w-full max-w-[1440px] flex-col items-start gap-40px px-20px pt-40px md:h-full md:flex-row md:items-center md:justify-center md:gap-40px md:px-40px md:pt-0">
-        <ModelMarqueeColumn />
+      <div className="pointer-events-none absolute inset-0 mx-auto hidden w-full max-w-[1440px] lg:block">
+        <div className="absolute inset-y-0 left-[750px]">
+          <ModelMarqueeColumn slow />
+        </div>
+        <div className="absolute inset-y-0 left-[1040px]">
+          <ModelMarqueeColumn />
+        </div>
+      </div>
 
-        <div className="flex w-full max-w-[680px] flex-col items-start gap-40px text-left md:items-center md:gap-24px md:text-center">
-          {/* Mobile size (32/40/-0.32) matches Hero's own mobile headline
-              exactly, node 7249:6792 — desktop unchanged (56/64/-0.56).
-              The old base fallback (40/46/-0.4) predated this mobile
-              frame, same situation as Hero's headline before it. */}
-          <h1 className="w-full font-display text-text-primary text-slide-title-sm md:pb-40px md:text-slide-title">
-            The Problem
+      <div className="relative z-10 flex w-full max-w-[1280px] flex-col items-start gap-32px px-20px pt-40px pb-40px md:h-full md:flex-row md:items-center md:gap-[64px] md:px-40px md:pt-0 md:pb-0">
+        <div className="flex w-full max-w-[600px] shrink-0 flex-col items-start gap-24px text-left">
+          <h1 className="font-display text-slide-title-sm text-text-primary md:text-slide-title">
+            The <span className="text-text-error">Problem</span>
           </h1>
-
-          {/* Mobile size (24/32/-0.1, node 7249:6826) sits between the old
-              base/md fallback values (22px and 28px) — neither matched,
-              corrected to the real measured value. Desktop (28/40/-0.1)
-              unchanged. */}
-          <p className="w-full font-ui font-semibold text-[24px] text-text-primary leading-[32px] tracking-[-0.1px] md:text-[28px] md:leading-[40px] md:tracking-[-0.1px]">
+          <p className="w-full font-ui font-semibold text-[24px] text-text-primary leading-[32px] tracking-[-0.1px] md:text-[28px] md:leading-[40px]">
             Every model decision was gut feel dressed up as strategy.
           </p>
-
-          {/* Mobile leading (28px, node 7249:6828) differs from the old
-              base fallback (26px) — corrected. Desktop (18/30/0.09)
-              unchanged. */}
           <p className="w-full font-ui font-normal text-[16px] text-text-primary leading-[28px] tracking-[0.08px] md:text-[18px] md:leading-[30px] md:tracking-[0.09px]">
             Enterprise AI teams were making expensive model decisions on gut
             feel, with no visibility into cost, no way to validate model
             quality, and no systematic path to a trusted output.
           </p>
-
-          <ProblemPillStack />
-
-          {/* Desktop's flat row — hidden on mobile in favor of
-              ProblemPillStack above (md:hidden on that component). */}
-          <div className="mt-16px hidden flex-wrap items-center justify-center gap-12px md:flex">
-            {PROBLEM_PILLS.map((pill) => (
-              <span
-                key={pill}
-                className="rounded-xl border border-border-default bg-bg-primary px-24px py-16px font-ui font-semibold text-[14px] text-text-primary leading-[20px]"
-              >
-                {pill}
-              </span>
-            ))}
-          </div>
         </div>
 
-        <ModelMarqueeColumn slow />
+        <PickModelGame />
       </div>
     </section>
   );
